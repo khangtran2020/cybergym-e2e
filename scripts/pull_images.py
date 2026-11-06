@@ -52,7 +52,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
                         task_dirs.append(dir)
                         # print(f"  Found task dir: {dir} (git diff within threshold)")
             if debug:
-                if len(task_dirs) > 4:
+                if len(task_dirs) > 2:
                     break  # Limit to 30 task dirs for debugging
 
         if project_image:
@@ -64,7 +64,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
             images.add(merged.get("build_image", DEFAULT_BUILD_IMAGE))
 
         if debug:
-            if len(images) > 50:
+            if len(images) > 10:
                 break  # Limit to 10 images for debugging
 
     return images
