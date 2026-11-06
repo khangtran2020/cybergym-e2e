@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import docker
+import json
 import tomli
 
 DEFAULT_BUILD_IMAGE = (
@@ -49,7 +50,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
                         git_diff = f.read()
                     if count_num_file_change_from_git_diff(git_diff, threshold):
                         task_dirs.append(dir)
-                        print(f"  Found task dir: {dir} (git diff within threshold)")
+                        # print(f"  Found task dir: {dir} (git diff within threshold)")
             if debug:
                 if len(task_dirs) > 4:
                     break  # Limit to 30 task dirs for debugging
@@ -69,7 +70,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
     return images
 
 
-def pull_image(image):
+def pull_image(image) -> bool:
     print(f"Pulling {image}...")
     try:
         if "@sha256:" in image:
@@ -78,8 +79,10 @@ def pull_image(image):
             repo, tag = image.rsplit(":", 1)
             client.images.pull(repo, tag=tag)
         print(f"  OK: {image}")
+        return True
     except docker.errors.APIError as e:
         print(f"  FAILED: {image}: {e}")
+        return False
 
 
 def main():
@@ -127,17 +130,27 @@ def main():
             print(f"  {img}")
         return
 
+    imaged_pulled = set()
+
     if args.max_workers <= 1:
         for img in sorted(images):
-            pull_image(img)
+            if pull_image(img):
+                imaged_pulled.add(img)
     else:
         with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
             futures = {executor.submit(pull_image, img): img for img in sorted(images)}
             for future in as_completed(futures):
                 try:
-                    future.result()
+                    if future.result():
+                        imaged_pulled.add(futures[future])
                 except Exception as e:
                     print(f"  ERROR: {futures[future]}: {e}")
+
+    # Save images pulled to a file for future reference as json
+    pulled_images_file = Path(args.projects_dir).parent / "pulled_images.json"
+    dict_to_save = {"images": sorted(imaged_pulled)}
+    with open(pulled_images_file, "w", encoding="utf-8") as f:
+        json.dump(dict_to_save, f, indent=4)
 
 
 if __name__ == "__main__":
