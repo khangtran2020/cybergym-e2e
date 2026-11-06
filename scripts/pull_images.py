@@ -55,7 +55,10 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
             if debug:
                 if len(task_dirs) > 2:
                     break  # Limit to 30 task dirs for debugging
-        project_dict[project_toml.parent.name] = task_dirs.split("/")[-1]
+
+        project_dict[project_toml.parent.name] = [
+            dir.split("/")[-1] for dir in task_dirs
+        ]
 
         if project_image:
             images.add(project_image)
