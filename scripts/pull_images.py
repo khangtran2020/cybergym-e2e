@@ -43,7 +43,8 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
             if dir.is_dir() and (dir / "config.toml").exists():
                 git_diff_file = dir / "patch.diff"
                 if git_diff_file.exists():
-                    git_diff = git_diff_file.read_text()
+                    with open(git_diff_file, "r") as f:
+                        git_diff = f.read()
                     if count_num_file_change_from_git_diff(git_diff, threshold):
                         task_dirs.append(dir)
                         print(f"  Found task dir: {dir} (git diff within threshold)")
