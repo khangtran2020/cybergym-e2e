@@ -40,6 +40,8 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
         project_image = project_config.get("build_image")
         if project_image and project_image == DEFAULT_BUILD_IMAGE:
             continue  # Skip default build image
+        if project_image and "sha256" in project_image:
+            continue  # Skip images with sha256, as they are already pinned
 
         task_dirs = []
         for dir in project_toml.parent.iterdir():
