@@ -51,7 +51,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
                         task_dirs.append(dir)
                         print(f"  Found task dir: {dir} (git diff within threshold)")
             if debug:
-                if len(task_dirs) > 5:
+                if len(task_dirs) > 4:
                     break  # Limit to 30 task dirs for debugging
 
         if project_image:
@@ -61,6 +61,10 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
             merged = dict(project_config)
             merged.update(tomli.loads((task_dir / "config.toml").read_text()))
             images.add(merged.get("build_image", DEFAULT_BUILD_IMAGE))
+
+        if debug:
+            if len(images) > 50:
+                break  # Limit to 10 images for debugging
 
     return images
 
