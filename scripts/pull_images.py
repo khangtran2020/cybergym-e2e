@@ -38,6 +38,8 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
     for project_toml in sorted(projects_dir.glob("*/project.toml")):
         project_config = tomli.loads(project_toml.read_text())
         project_image = project_config.get("build_image")
+        if project_image and project_image == DEFAULT_BUILD_IMAGE:
+            continue  # Skip default build image
 
         task_dirs = []
         for dir in project_toml.parent.iterdir():
