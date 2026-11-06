@@ -51,7 +51,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
                         task_dirs.append(dir)
                         print(f"  Found task dir: {dir} (git diff within threshold)")
             if debug:
-                if len(task_dirs) > 10:
+                if len(task_dirs) > 5:
                     break  # Limit to 30 task dirs for debugging
 
         if project_image:
