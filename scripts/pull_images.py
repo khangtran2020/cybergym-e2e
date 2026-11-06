@@ -64,7 +64,10 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
             merged = dict(project_config)
             merged.update(tomli.loads((task_dir / "config.toml").read_text()))
             # images.add(merged.get("build_image", DEFAULT_BUILD_IMAGE))
-            if merged.get("build_image"):
+            if (
+                merged.get("build_image")
+                and merged.get("build_image") != DEFAULT_BUILD_IMAGE
+            ):
                 images.add(merged.get("build_image"))
                 taken_task_dirs.append(task_dir)
 
