@@ -32,6 +32,7 @@ def count_num_file_change_from_git_diff(git_diff: str, threshold: int = 1) -> bo
 
 def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set:
     images = set()
+    project_dict = {}
     projects_dir = Path(projects_dir)
 
     for project_toml in sorted(projects_dir.glob("*/project.toml")):
@@ -54,6 +55,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
             if debug:
                 if len(task_dirs) > 2:
                     break  # Limit to 30 task dirs for debugging
+        project_dict[project_toml.parent.name] = task_dirs.split("/")[-1]
 
         if project_image:
             images.add(project_image)
@@ -61,13 +63,15 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
         for task_dir in task_dirs:
             merged = dict(project_config)
             merged.update(tomli.loads((task_dir / "config.toml").read_text()))
-            images.add(merged.get("build_image", DEFAULT_BUILD_IMAGE))
+            # images.add(merged.get("build_image", DEFAULT_BUILD_IMAGE))
+            if merged.get("build_image"):
+                images.add(merged.get("build_image"))
 
         if debug:
             if len(images) > 10:
                 break  # Limit to 10 images for debugging
 
-    return images
+    return images, project_dict
 
 
 def pull_image(image) -> bool:
@@ -120,7 +124,7 @@ def main():
     )
     args = parser.parse_args()
 
-    images = collect_images(
+    images, project_dict = collect_images(
         args.projects_dir, threshold=args.threshold, debug=args.debug
     )
     print(f"Found {len(images)} unique images.")
@@ -148,9 +152,9 @@ def main():
 
     # Save images pulled to a file for future reference as json
     pulled_images_file = Path(args.projects_dir).parent / "pulled_images.json"
-    dict_to_save = {"images": sorted(imaged_pulled)}
+    project_dict["pulled_images"] = sorted(imaged_pulled)
     with open(pulled_images_file, "w", encoding="utf-8") as f:
-        json.dump(dict_to_save, f, indent=4)
+        json.dump(project_dict, f, indent=4)
 
 
 if __name__ == "__main__":
