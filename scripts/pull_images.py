@@ -71,7 +71,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
                 images.add(merged.get("build_image"))
                 taken_task_dirs.append(task_dir)
 
-        if len(task_dirs) > 0:
+        if len(taken_task_dirs) > 0:
             project_dict[project_toml.parent.name] = [
                 str(dir).split("/")[-1] for dir in taken_task_dirs
             ]
@@ -82,7 +82,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
         if debug:
             if len(images) > 10:
                 break  # Limit to 10 images for debugging
-
+    print(images)
     return images, project_dict
 
 
