@@ -56,14 +56,13 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
                 if len(task_dirs) > 2:
                     break  # Limit to 30 task dirs for debugging
 
-        if project_image:
+        if project_image and project_image != DEFAULT_BUILD_IMAGE:
             images.add(project_image)
 
         taken_task_dirs = []
         for task_dir in task_dirs:
             merged = dict(project_config)
             merged.update(tomli.loads((task_dir / "config.toml").read_text()))
-            # images.add(merged.get("build_image", DEFAULT_BUILD_IMAGE))
             if (
                 merged.get("build_image")
                 and merged.get("build_image") != DEFAULT_BUILD_IMAGE
