@@ -11,6 +11,8 @@ __pycache__/
 # C extensions
 *.so
 
+logs/
+results/
 # Distribution / packaging
 .Python
 build/
@@ -40,6 +42,7 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+pulled_images.json
 
 # Unit test / coverage reports
 htmlcov/
