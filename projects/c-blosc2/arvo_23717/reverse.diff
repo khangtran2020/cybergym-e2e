@@ -1,0 +1,18 @@
+diff --git a/tests/fuzz/fuzz_decompress.c b/tests/fuzz/fuzz_decompress.c
+index b89f70a2..04b97afc 100644
+--- a/tests/fuzz/fuzz_decompress.c
++++ b/tests/fuzz/fuzz_decompress.c
+@@ -22,12 +22,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+   if (nbytes == 0) {
+     return 0;
+   }
++  
+-
+-  if (blosc_cbuffer_validate(data, size, &nbytes) != 0) {
+-    /* Unexpected `nbytes` specified in blosc header */
+-    return 0;
+-  }
+-
+   output = malloc(cbytes);
+   if (output != NULL) {
+     blosc_decompress(data, output, cbytes);

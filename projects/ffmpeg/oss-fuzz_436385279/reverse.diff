@@ -1,0 +1,16 @@
+diff --git a/libavcodec/lzf.c b/libavcodec/lzf.c
+index 94b369dd59..1e3c86c88c 100644
+--- a/libavcodec/lzf.c
++++ b/libavcodec/lzf.c
+@@ -56,10 +56,7 @@ int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size)
+                 p = *buf + len;
+             }
+ 
++            bytestream2_get_buffer(gb, p, s);
+-            int s2 = bytestream2_get_buffer(gb, p, s);
+-            if (s2 != s)
+-                return AVERROR_INVALIDDATA;
+-
+             p   += s;
+             len += s;
+         } else {

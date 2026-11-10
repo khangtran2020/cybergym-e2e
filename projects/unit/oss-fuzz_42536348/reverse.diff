@@ -1,0 +1,16 @@
+diff --git a/src/nxt_sockaddr.c b/src/nxt_sockaddr.c
+index 4d1e723b..32941893 100644
+--- a/src/nxt_sockaddr.c
++++ b/src/nxt_sockaddr.c
+@@ -732,11 +732,6 @@ nxt_sockaddr_inet_parse(nxt_mp_t *mp, nxt_str_t *addr)
+         length = p - addr->start;
+     }
+ 
+-    if (length == 0) {
+-        nxt_thread_log_error(NXT_LOG_ERR, "invalid address \"%V\"", addr);
+-        return NULL;
+-    }
+-
+     inaddr = INADDR_ANY;
+ 
+     if (length != 1 || addr->start[0] != '*') {

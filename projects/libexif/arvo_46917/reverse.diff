@@ -1,0 +1,13 @@
+diff --git a/libexif/fuji/exif-mnote-data-fuji.c b/libexif/fuji/exif-mnote-data-fuji.c
+index 2a8a77f..b055c45 100644
+--- a/libexif/fuji/exif-mnote-data-fuji.c
++++ b/libexif/fuji/exif-mnote-data-fuji.c
+@@ -28,7 +28,7 @@
+ 
+ #include "exif-mnote-data-fuji.h"
+ 
++#define CHECKOVERFLOW(offset,datasize,structsize) (( offset >= datasize) || (structsize > datasize) || (offset > datasize - structsize ))
+-#define CHECKOVERFLOW(offset,datasize,structsize) (( offset >= datasize) || ((structsize) > datasize) || (offset > datasize - (structsize) ))
+ 
+ struct _MNoteFujiDataPrivate {
+ 	ExifByteOrder order;

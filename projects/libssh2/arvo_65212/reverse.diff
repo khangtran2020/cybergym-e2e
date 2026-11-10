@@ -1,0 +1,12 @@
+diff --git a/src/kex.c b/src/kex.c
+index 65973297..a7b301e1 100644
+--- a/src/kex.c
++++ b/src/kex.c
+@@ -3349,7 +3349,6 @@ _libssh2_kex_agree_instr(unsigned char *haystack, size_t haystack_len,
+         left = end_haystack - s;
+         if((left >= 1) && (left <= haystack_len) && (left > needle_len)) {
+             s++;
+-            left--;
+         }
+         else {
+             return NULL;

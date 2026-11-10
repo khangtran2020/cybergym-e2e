@@ -1,0 +1,20 @@
+diff --git a/binutils/objdump.c b/binutils/objdump.c
+index 5dac13ba868..0e8e1980b80 100644
+--- a/binutils/objdump.c
++++ b/binutils/objdump.c
+@@ -1015,7 +1015,6 @@ slurp_symtab (bfd *abfd)
+       my_bfd_nonfatal (bfd_get_filename (abfd));
+       free (sy);
+       sy = NULL;
+-      symcount = 0;
+     }
+   return sy;
+ }
+@@ -1049,7 +1048,6 @@ slurp_dynamic_symtab (bfd *abfd)
+       my_bfd_nonfatal (bfd_get_filename (abfd));
+       free (sy);
+       sy = NULL;
+-      dynsymcount = 0;
+     }
+   return sy;
+ }

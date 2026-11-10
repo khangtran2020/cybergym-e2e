@@ -1,0 +1,12 @@
+diff --git a/src/OT/glyf/glyf.hh b/src/OT/glyf/glyf.hh
+index 71989d8df..b9ace67d1 100644
+--- a/src/OT/glyf/glyf.hh
++++ b/src/OT/glyf/glyf.hh
+@@ -521,7 +521,6 @@ struct glyf_accelerator_t
+ 
+   hb_glyf_scratch_t *acquire_scratch () const
+   {
+-    if (!has_data ()) return nullptr;
+     hb_glyf_scratch_t *scratch = cached_scratch.get_acquire ();
+     if (!scratch || unlikely (!cached_scratch.cmpexch (scratch, nullptr)))
+     {

@@ -1,0 +1,22 @@
+diff --git a/src/core/parser/parse_via.c b/src/core/parser/parse_via.c
+index 100af6d6bf..78bd304f32 100644
+--- a/src/core/parser/parse_via.c
++++ b/src/core/parser/parse_via.c
+@@ -940,7 +940,7 @@ static /*inline*/ char *parse_via_param(char *const p, const char *const end,
+ 
+ find_value:
+ 	tmp++;
++	for(; *tmp; tmp++) {
+-	for(; tmp<end && *tmp; tmp++) {
+ 		switch(*tmp) {
+ 			case ' ':
+ 			case '\t':
+@@ -2064,7 +2064,7 @@ main_via:
+ 	tmp++;
+ 	c_nest = 0;
+ 	/*state should always be F_HOST here*/;
++	for(; *tmp; tmp++) {
+-	for(; tmp<end && *tmp; tmp++) {
+ 		switch(*tmp) {
+ 			case ' ':
+ 			case '\t':

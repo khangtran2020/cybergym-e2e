@@ -1,0 +1,12 @@
+diff --git a/MCInst.c b/MCInst.c
+index d0bdc68e..bbb3050c 100644
+--- a/MCInst.c
++++ b/MCInst.c
+@@ -21,7 +21,6 @@ void MCInst_Init(MCInst *inst)
+ 
+ 	for (i = 0; i < 48; i++) {
+ 		inst->Operands[i].Kind = kInvalid;
+-		inst->Operands[i].ImmVal = 0;
+ 	}
+ 
+ 	inst->Opcode = 0;

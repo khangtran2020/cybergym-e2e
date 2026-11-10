@@ -1,0 +1,14 @@
+diff --git a/subprojects/gst-plugins-base/gst/typefind/gsttypefindfunctions.c b/subprojects/gst-plugins-base/gst/typefind/gsttypefindfunctions.c
+index c732f31237..121a9a5192 100644
+--- a/subprojects/gst-plugins-base/gst/typefind/gsttypefindfunctions.c
++++ b/subprojects/gst-plugins-base/gst/typefind/gsttypefindfunctions.c
+@@ -570,9 +570,6 @@ xml_check_first_element_from_data (const guint8 * data, guint length,
+     length -= (ptr - data);
+     data = ptr;
+ 
+-    if (length < 2)
+-      return FALSE;
+-
+     got_xmldec = (memcmp (data, "?>", 2) == 0);
+     if (!got_xmldec)
+       return FALSE;

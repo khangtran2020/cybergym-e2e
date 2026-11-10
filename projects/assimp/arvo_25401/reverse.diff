@@ -1,0 +1,12 @@
+diff --git a/code/AssetLib/HMP/HMPLoader.cpp b/code/AssetLib/HMP/HMPLoader.cpp
+index 661e4d1b2..97c1858fb 100644
+--- a/code/AssetLib/HMP/HMPLoader.cpp
++++ b/code/AssetLib/HMP/HMPLoader.cpp
+@@ -451,7 +451,6 @@ void HMPImporter::ReadFirstSkin(unsigned int iNumSkins, const unsigned char *szC
+ 
+     // now we need to skip any other skins ...
+     for (unsigned int i = 1; i < iNumSkins; ++i) {
+-        SizeCheck(szCursor + 3 * sizeof(uint32_t));
+         iType = *((uint32_t *)szCursor);
+         szCursor += sizeof(uint32_t);
+         iWidth = *((uint32_t *)szCursor);

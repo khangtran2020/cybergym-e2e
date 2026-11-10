@@ -1,0 +1,13 @@
+diff --git a/libsepol/src/conditional.c b/libsepol/src/conditional.c
+index a620451d..f78b38a2 100644
+--- a/libsepol/src/conditional.c
++++ b/libsepol/src/conditional.c
+@@ -522,7 +522,7 @@ int cond_init_bool_indexes(policydb_t * p)
+ 	if (p->bool_val_to_struct)
+ 		free(p->bool_val_to_struct);
+ 	p->bool_val_to_struct = (cond_bool_datum_t **)
++	    mallocarray(p->p_bools.nprim, sizeof(cond_bool_datum_t *));
+-	    calloc(p->p_bools.nprim, sizeof(cond_bool_datum_t *));
+ 	if (!p->bool_val_to_struct)
+ 		return -1;
+ 	return 0;

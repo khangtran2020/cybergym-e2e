@@ -1,0 +1,13 @@
+diff --git a/libavcodec/scpr3.c b/libavcodec/scpr3.c
+index 369d2653c2..e91c198308 100644
+--- a/libavcodec/scpr3.c
++++ b/libavcodec/scpr3.c
+@@ -1167,7 +1167,7 @@ static int decompress_p3(AVCodecContext *avctx,
+                 }
+             } else {
+                 int run, bx = x * 16 + sx1, by = y * 16 + sy1;
++                uint32_t clr, ptype = 0, r, g, b;
+-                uint32_t clr = 0, ptype = 0, r, g, b;
+ 
+                 if (bx >= avctx->width)
+                     return AVERROR_INVALIDDATA;

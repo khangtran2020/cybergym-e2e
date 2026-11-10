@@ -1,0 +1,13 @@
+diff --git a/src/hb-machinery.hh b/src/hb-machinery.hh
+index 19245e8..ae34c92 100644
+--- a/src/hb-machinery.hh
++++ b/src/hb-machinery.hh
+@@ -118,7 +118,7 @@ static inline Type& StructAfter(TObject &X)
+ 
+ #define DEFINE_SIZE_ARRAY_SIZED(size, array) \
+ 	DEFINE_SIZE_ARRAY(size, array); \
++	inline unsigned int get_size (void) const { return (size - array[0].min_size + array.get_size ()); }
+-	inline unsigned int get_size (void) const { return (size - array.min_size + array.get_size ()); }
+ 
+ #define DEFINE_SIZE_ARRAY2(size, array1, array2) \
+   DEFINE_INSTANCE_ASSERTION (sizeof (*this) == (size) + sizeof (this->array1[0]) + sizeof (this->array2[0])); \

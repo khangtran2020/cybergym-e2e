@@ -1,0 +1,13 @@
+diff --git a/src/libopensc/pkcs15-itacns.c b/src/libopensc/pkcs15-itacns.c
+index ff1511c4..6f7523ae 100644
+--- a/src/libopensc/pkcs15-itacns.c
++++ b/src/libopensc/pkcs15-itacns.c
+@@ -379,7 +379,7 @@ static int hextoint(char *src, unsigned int len)
+ 
+ 	if(len >= sizeof(hex))
+ 		return -1;
++	strncpy(hex, src, len+1);
+-	strncpy(hex, src, len);
+ 	hex[len] = '\0';
+ 	res = strtol(hex, &end, 0x10);
+ 	if(end != (char*)&hex[len])

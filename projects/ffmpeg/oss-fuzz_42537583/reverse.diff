@@ -1,0 +1,12 @@
+diff --git a/libavcodec/bsf/media100_to_mjpegb.c b/libavcodec/bsf/media100_to_mjpegb.c
+index 4b2dc1a35a..6e117ae20f 100644
+--- a/libavcodec/bsf/media100_to_mjpegb.c
++++ b/libavcodec/bsf/media100_to_mjpegb.c
+@@ -148,7 +148,6 @@ second_field:
+     AV_WB32(out->data + second_field_offset + 36, sod_offset[1] - second_field_offset);
+ 
+     out->size = bytestream2_tell_p(&pb);
+-    memset(out->data + out->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+ 
+     ret = av_packet_copy_props(out, in);
+     if (ret < 0)

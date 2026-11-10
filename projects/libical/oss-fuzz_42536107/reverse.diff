@@ -1,0 +1,30 @@
+diff --git a/src/libical/icalparser.c b/src/libical/icalparser.c
+index 75779ea9..0d223dea 100644
+--- a/src/libical/icalparser.c
++++ b/src/libical/icalparser.c
+@@ -966,8 +966,6 @@ icalcomponent *icalparser_add_line(icalparser *parser, char *line)
+                     }
+                     if (pvalue_heap) {
+                         icalmemory_free_buffer(pvalue_heap);
+-                        /* coverirty */
+-                        pvalue_heap = 0;
+                     }
+                     continue;
+                 }
+@@ -1033,8 +1031,6 @@ icalcomponent *icalparser_add_line(icalparser *parser, char *line)
+                                                  pvalue_stack, sizeof(pvalue_stack))) {
+                     if (pvalue_heap) {
+                         icalmemory_free_buffer(pvalue_heap);
+-                        /* coverity[uninit_use] */
+-                        pvalue_heap = 0;
+                     }
+                     if (name_heap) {
+                         icalmemory_free_buffer(name_heap);
+@@ -1075,7 +1071,6 @@ icalcomponent *icalparser_add_line(icalparser *parser, char *line)
+                 }
+                 if (pvalue_heap) {
+                     icalmemory_free_buffer(pvalue_heap);
+-                    /* coverity[uninit_use] */
+                     pvalue_heap = 0;
+                 }
+                 icalmemory_free_buffer(str);

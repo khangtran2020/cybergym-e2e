@@ -1,0 +1,13 @@
+diff --git a/base/gstype2.c b/base/gstype2.c
+index 2e7a4ce7e..35b7f3f2b 100644
+--- a/base/gstype2.c
++++ b/base/gstype2.c
+@@ -690,8 +690,6 @@ gs_type2_interpret(gs_type1_state * pcis, const gs_glyph_data_t *pgd,
+                         csp -= 3;
+                         break;
+                     case ce2_neg:
+-                        if (!CS_CHECK_CSTACK_BOUNDS(csp, cstack))
+-                            return_error(gs_error_invalidfont);
+                         *csp = -*csp;
+                         break;
+                     case ce2_eq:

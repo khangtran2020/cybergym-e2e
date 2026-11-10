@@ -1,0 +1,12 @@
+diff --git a/mrbgems/mruby-sprintf/src/sprintf.c b/mrbgems/mruby-sprintf/src/sprintf.c
+index 2ae982a16..03e5729c6 100644
+--- a/mrbgems/mruby-sprintf/src/sprintf.c
++++ b/mrbgems/mruby-sprintf/src/sprintf.c
+@@ -270,7 +270,6 @@ get_num(mrb_state *mrb, const char *p, const char *end, int *valp)
+     }
+     next_n += *p - '0';
+   }
+-  if (next_n > INT_MAX || next_n < 0) return NULL;
+   if (p >= end) {
+     mrb_raise(mrb, E_ARGUMENT_ERROR, "malformed format string - %%*[0-9]");
+   }

@@ -1,0 +1,15 @@
+diff --git a/bfd/vms-alpha.c b/bfd/vms-alpha.c
+index 06fa891ac70..c8250e2a673 100644
+--- a/bfd/vms-alpha.c
++++ b/bfd/vms-alpha.c
+@@ -7390,9 +7390,7 @@ evax_bfd_print_dst (struct bfd *abfd, unsigned int dst_size, FILE *file)
+ 	  fprintf (file, _("standard data: %s\n"),
+ 		   evax_bfd_get_dsc_name (type));
+ 	  evax_bfd_print_valspec (buf, len, 4, file);
++	  fprintf (file, _("    name: %.*s\n"), buf[5], buf + 6);
+-	  if (len > 6)
+-	    fprintf (file, _("    name: %.*s\n"),
+-		     buf[5] > len - 6 ? len - 6 : buf[5], buf + 6);
+ 	  break;
+ 	case DST__K_MODBEG:
+ 	  {

@@ -1,0 +1,15 @@
+diff --git a/src/librawspeed/decompressors/FujiDecompressor.cpp b/src/librawspeed/decompressors/FujiDecompressor.cpp
+index 013dc2a..ba21635 100644
+--- a/src/librawspeed/decompressors/FujiDecompressor.cpp
++++ b/src/librawspeed/decompressors/FujiDecompressor.cpp
+@@ -37,10 +37,6 @@ namespace rawspeed {
+ 
+ FujiDecompressor::FujiDecompressor(const RawImage& img, ByteStream input_)
+     : AbstractParallelizedDecompressor(img), input(std::move(input_)) {
+-  if (mRaw->getCpp() != 1 || mRaw->getDataType() != TYPE_USHORT16 ||
+-      mRaw->getBpp() != 2)
+-    ThrowRDE("Unexpected component count / data type");
+-
+   input.setByteOrder(Endianness::big);
+ 
+   header = FujiHeader(&input);

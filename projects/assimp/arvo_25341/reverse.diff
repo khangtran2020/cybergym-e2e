@@ -1,0 +1,24 @@
+diff --git a/code/AssetLib/MDL/MDLMaterialLoader.cpp b/code/AssetLib/MDL/MDLMaterialLoader.cpp
+index 62320814a..f44896819 100644
+--- a/code/AssetLib/MDL/MDLMaterialLoader.cpp
++++ b/code/AssetLib/MDL/MDLMaterialLoader.cpp
+@@ -132,9 +132,6 @@ void MDLImporter::CreateTextureARGB8_3DGS_MDL3(const unsigned char *szData) {
+     pcNew->mWidth = pcHeader->skinwidth;
+     pcNew->mHeight = pcHeader->skinheight;
+ 
+-    if(pcNew->mWidth != 0 && pcNew->mHeight > UINT_MAX/pcNew->mWidth) {
+-        throw DeadlyImportError("Invalid MDL file. A texture is too big.");
+-    }
+     pcNew->pcData = new aiTexel[pcNew->mWidth * pcNew->mHeight];
+ 
+     const unsigned char *szColorMap;
+@@ -220,9 +217,6 @@ void MDLImporter::ParseTextureColorData(const unsigned char *szData,
+ 
+     // allocate storage for the texture image
+     if (do_read) {
+-        if(pcNew->mWidth != 0 && pcNew->mHeight > UINT_MAX/pcNew->mWidth) {
+-            throw DeadlyImportError("Invalid MDL file. A texture is too big.");
+-        }
+         pcNew->pcData = new aiTexel[pcNew->mWidth * pcNew->mHeight];
+     }
+ 

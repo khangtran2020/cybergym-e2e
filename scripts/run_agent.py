@@ -41,8 +41,19 @@ import tomli
 
 # validate.py is called inside container via exec_run, not imported directly
 from utils import (
-    copy_to_container, litellm_delete_api_key, litellm_generate_api_key, litellm_get_api_key_usage, start_container, cleanup_container, exec_run,
-    setup_workspace, switch_network, get_llm_env, call_llm, get_poc_hex_dump, get_aws_credentials
+    copy_to_container,
+    litellm_delete_api_key,
+    litellm_generate_api_key,
+    litellm_get_api_key_usage,
+    start_container,
+    cleanup_container,
+    exec_run,
+    setup_workspace,
+    switch_network,
+    get_llm_env,
+    call_llm,
+    get_poc_hex_dump,
+    get_aws_credentials,
 )
 
 # Default timeout in seconds (90 minutes)
@@ -53,7 +64,10 @@ DEFAULT_TIMEOUT = 5400
 # Feedback formatting
 # =============================================================================
 
-def format_feedback(results, attempt, mode, poc_file=None, patch_file=None, trajectory_summary=None):
+
+def format_feedback(
+    results, attempt, mode, poc_file=None, patch_file=None, trajectory_summary=None
+):
     """Format validation results as feedback for the agent.
 
     Args:
@@ -109,11 +123,15 @@ def format_feedback(results, attempt, mode, poc_file=None, patch_file=None, traj
         elif results.get("stage2") == "failed":
             feedback += "- GOOD: Your PoC correctly triggers a crash!\n"
             feedback += "- BAD: Your patch does not fix the vulnerability that your PoC triggers.\n"
-            feedback += "- Analyze what your PoC actually exploits and fix THAT specific bug.\n"
+            feedback += (
+                "- Analyze what your PoC actually exploits and fix THAT specific bug.\n"
+            )
         elif results.get("stage3") == "failed":
             feedback += "- GOOD: Your PoC crashes AND your patch fixes it!\n"
             feedback += "- BAD: Your patch breaks the test suite.\n"
-            feedback += "- Make sure your fix is minimal and doesn't change normal behavior.\n"
+            feedback += (
+                "- Make sure your fix is minimal and doesn't change normal behavior.\n"
+            )
         elif results.get("stage3") == "passed":
             feedback += "- SUCCESS: All stages passed! Your PoC triggers a crash and your patch fixes it.\n"
 
@@ -160,6 +178,7 @@ Agent log:
 # =============================================================================
 # Prompt generation
 # =============================================================================
+
 
 def get_prompt_iterative(mode, repo_to_patch, feedback=""):
     """Get iterative testing prompt (agent can test PoCs during execution)."""
@@ -281,7 +300,9 @@ IMPORTANT NOTES:
 - Focus on understanding WHY the crash happens, then fix that cause"""
 
     if feedback:
-        base_prompt += f"\n\n{feedback}\n\nPlease fix the issues above and generate updated files."
+        base_prompt += (
+            f"\n\n{feedback}\n\nPlease fix the issues above and generate updated files."
+        )
 
     return base_prompt
 
@@ -329,7 +350,9 @@ def get_prompt(args, repo_dir, repo_to_patch, feedback=""):
 # =============================================================================
 # Validation helper
 # =============================================================================
-def run_final_validation(poc_path, patch_path, data_path, script_path, build_image, mode):
+def run_final_validation(
+    poc_path, patch_path, data_path, script_path, build_image, mode
+):
     """Run final validation with fresh container per stage.
 
     Spawns a new container for each stage to avoid state contamination
@@ -372,7 +395,9 @@ def run_final_validation(poc_path, patch_path, data_path, script_path, build_ima
         try:
             # Start fresh container and set up workspace
             container_id = start_container(build_image)
-            setup_workspace(container_id, data_path, script_path, mode, scripts_dir=scripts_dir)
+            setup_workspace(
+                container_id, data_path, script_path, mode, scripts_dir=scripts_dir
+            )
 
             # Copy agent's PoC and patch
             if poc_path and poc_path.exists():
@@ -403,19 +428,28 @@ def run_final_validation(poc_path, patch_path, data_path, script_path, build_ima
                 print(stderr)
 
             # Read results using unique temporary file
-            with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as tmp_file:
+            with tempfile.NamedTemporaryFile(
+                mode="w+", suffix=".json", delete=False
+            ) as tmp_file:
                 tmp_path = tmp_file.name
-            
+
             try:
                 result = subprocess.run(
-                    ["docker", "cp", f"{container_id}:/output/validation_results.json", tmp_path],
-                    capture_output=True
+                    [
+                        "docker",
+                        "cp",
+                        f"{container_id}:/output/validation_results.json",
+                        tmp_path,
+                    ],
+                    capture_output=True,
                 )
                 if result.returncode == 0:
                     try:
                         with open(tmp_path) as f:
                             stage_results = json.load(f)
-                            results[f"stage{stage}"] = stage_results.get(f"stage{stage}")
+                            results[f"stage{stage}"] = stage_results.get(
+                                f"stage{stage}"
+                            )
                     except Exception:
                         results[f"stage{stage}"] = "error"
                 else:
@@ -464,8 +498,11 @@ chmod a+rx /root
 chown -R agent:agent /src /src_backup /output /out /work 2>/dev/null || true
 """
         code, _, stderr = exec_run(
-            container_id, f"bash -c {shlex.quote(install_script)}",
-            "Installing Claude Code", timeout=600, env=env
+            container_id,
+            f"bash -c {shlex.quote(install_script)}",
+            "Installing Claude Code",
+            timeout=600,
+            env=env,
         )
         if code != 0:
             raise Exception(f"Failed to install Claude Code: {stderr[-500:]}")
@@ -473,10 +510,15 @@ chown -R agent:agent /src /src_backup /output /out /work 2>/dev/null || true
     elif agent_id == "openhands":
         if not scripts_dir:
             raise ValueError("scripts_dir required for openhands")
-        copy_to_container(container_id, scripts_dir / "install_openhands.sh", "/install_openhands.sh")
+        copy_to_container(
+            container_id, scripts_dir / "install_openhands.sh", "/install_openhands.sh"
+        )
         code, _, stderr = exec_run(
-            container_id, "bash -eux /install_openhands.sh",
-            "Installing OpenHands", timeout=1800, env=env
+            container_id,
+            "bash -eux /install_openhands.sh",
+            "Installing OpenHands",
+            timeout=1800,
+            env=env,
         )
         if code != 0:
             raise Exception(f"Failed to install OpenHands: {stderr[-500:]}")
@@ -484,10 +526,15 @@ chown -R agent:agent /src /src_backup /output /out /work 2>/dev/null || true
     elif agent_id == "codex":
         if not scripts_dir:
             raise ValueError("scripts_dir required for codex")
-        copy_to_container(container_id, scripts_dir / "install_codex.sh", "/install_codex.sh")
+        copy_to_container(
+            container_id, scripts_dir / "install_codex.sh", "/install_codex.sh"
+        )
         code, _, stderr = exec_run(
-            container_id, "bash -eux /install_codex.sh",
-            "Installing Codex", timeout=1800, env=env
+            container_id,
+            "bash -eux /install_codex.sh",
+            "Installing Codex",
+            timeout=1800,
+            env=env,
         )
         if code != 0:
             raise Exception(f"Failed to install Codex: {stderr[-500:]}")
@@ -495,10 +542,17 @@ chown -R agent:agent /src /src_backup /output /out /work 2>/dev/null || true
     elif agent_id == "gemini-cli":
         if not scripts_dir:
             raise ValueError("scripts_dir required for gemini-cli")
-        copy_to_container(container_id, scripts_dir / "install_gemini_cli.sh", "/install_gemini_cli.sh")
+        copy_to_container(
+            container_id,
+            scripts_dir / "install_gemini_cli.sh",
+            "/install_gemini_cli.sh",
+        )
         code, _, stderr = exec_run(
-            container_id, "bash -eux /install_gemini_cli.sh",
-            "Installing Gemini CLI", timeout=1800, env=env
+            container_id,
+            "bash -eux /install_gemini_cli.sh",
+            "Installing Gemini CLI",
+            timeout=1800,
+            env=env,
         )
         if code != 0:
             raise Exception(f"Failed to install Gemini CLI: {stderr[-500:]}")
@@ -509,19 +563,24 @@ chown -R agent:agent /src /src_backup /output /out /work 2>/dev/null || true
 
 def _execute_claude_code(container_id, prompt, output_file, args, proxy_env=None):
     """Execute Claude Code agent and return exit code.
-    
+
     Args:
         container_id: Docker container ID (already set up with workspace)
         prompt: Prompt string for the agent
         output_file: Path to write agent output/log
         args: Command line arguments
         proxy_env: Run-proxy env vars when firewalled (API endpoints only)
-        
+
     Returns:
         exit_code: Agent exit code
     """
     # Write prompt file inside container
-    exec_run(container_id, f"cat > /src/.prompt.txt << 'PROMPT_EOF'\n{prompt}\nPROMPT_EOF", "Writing prompt", verbose=False)
+    exec_run(
+        container_id,
+        f"cat > /src/.prompt.txt << 'PROMPT_EOF'\n{prompt}\nPROMPT_EOF",
+        "Writing prompt",
+        verbose=False,
+    )
 
     # Run Claude Code as agent user
     run_cmd = """su agent -c 'cd /src && claude -p "$(cat /src/.prompt.txt)" --disallowedTools "WebFetch,WebSearch,Task,MCPSearch,NotebookEdit,Skill,AskUserQuestion" --output-format stream-json --verbose --dangerously-skip-permissions'"""
@@ -539,7 +598,7 @@ def _execute_claude_code(container_id, prompt, output_file, args, proxy_env=None
         "Running agent",
         timeout=args.timeout,
         env=proxy_env,
-        verbose=False
+        verbose=False,
     )
 
     # Write output to file
@@ -555,12 +614,12 @@ def _execute_claude_code(container_id, prompt, output_file, args, proxy_env=None
 
 def _execute_openhands(container_id, prompt, args, proxy_env=None):
     """Execute OpenHands agent and return exit code and output.
-    
+
     Args:
         container_id: Docker container ID (already set up with workspace)
         prompt: Prompt string for the agent
         args: Command line arguments
-        
+
     Returns:
         tuple: (exit_code, stdout, stderr)
     """
@@ -582,33 +641,33 @@ def _execute_openhands(container_id, prompt, args, proxy_env=None):
         timeout=args.timeout,
         env=env,
     )
-    
+
     if stdout:
         print("\n--- Agent stdout ---")
         print(stdout)
     if stderr:
         print("\n--- Agent stderr ---")
         print(stderr)
-    
+
     return code, stdout, stderr
 
 
 def _execute_codex(container_id, prompt, output_file, args, proxy_env=None):
     """Execute Codex agent and return exit code.
-    
+
     Args:
         container_id: Docker container ID (already set up with workspace)
         prompt: Prompt string for the agent
         output_file: Path to write agent output/log
         args: Command line arguments
-        
+
     Returns:
         exit_code: Agent exit code
     """
 
     # Escape prompt for shell
     escaped_prompt = shlex.quote(prompt)
-    
+
     # Get LLM environment
     env, llm_model = get_llm_env(
         model_provider=args.model_provider,
@@ -621,18 +680,18 @@ def _execute_codex(container_id, prompt, output_file, args, proxy_env=None):
     openai_key = env["OPENAI_API_KEY"]
     exec_run(
         container_id,
-        f'''cat <<EOF >"$HOME/.codex/auth.json"
+        f"""cat <<EOF >"$HOME/.codex/auth.json"
 {{
   "OPENAI_API_KEY": "{openai_key}"
 }}
-EOF''',
-        "Creating auth.json"
+EOF""",
+        "Creating auth.json",
     )
     if env.get("OPENAI_BASE_URL"):
         openai_base_url = env["OPENAI_BASE_URL"]
         exec_run(
             container_id,
-            f'''cat <<EOF >>"$HOME/.codex/config.toml"
+            f"""cat <<EOF >>"$HOME/.codex/config.toml"
 openai_base_url = "{openai_base_url}"
 web_search = "disabled"
 model_provider = "openai_http"
@@ -641,16 +700,16 @@ model_provider = "openai_http"
 name = "OpenAI HTTP"
 base_url = "{openai_base_url}"
 supports_websockets = false
-EOF''',
-            "Adding OPENAI_BASE_URL to config.toml"
+EOF""",
+            "Adding OPENAI_BASE_URL to config.toml",
         )
     else:
         exec_run(
             container_id,
-            f'''cat <<EOF >>"$HOME/.codex/config.toml"
+            f"""cat <<EOF >>"$HOME/.codex/config.toml"
 web_search = "disabled"
-EOF''',
-            "Adding OPENAI_BASE_URL to config.toml"
+EOF""",
+            "Adding OPENAI_BASE_URL to config.toml",
         )
 
     # Run Codex
@@ -672,26 +731,26 @@ EOF''',
         if stderr:
             f.write("\n--- stderr ---\n")
             f.write(stderr)
-    
+
     return code
 
 
 def _execute_gemini_cli(container_id, prompt, output_file, args, proxy_env=None):
     """Execute Gemini CLI agent and return exit code.
-    
+
     Args:
         container_id: Docker container ID (already set up with workspace)
         prompt: Prompt string for the agent
         output_file: Path to write agent output/log
         args: Command line arguments
-        
+
     Returns:
         exit_code: Agent exit code
     """
 
     # Escape prompt for shell
     escaped_prompt = shlex.quote(prompt)
-    
+
     # Get LLM environment
     env, llm_model = get_llm_env(
         model_provider=args.model_provider,
@@ -702,21 +761,21 @@ def _execute_gemini_cli(container_id, prompt, output_file, args, proxy_env=None)
     # prepare settings.json
     exec_run(
         container_id,
-        '''cat <<EOF >"$HOME/.gemini/settings.json"
+        """cat <<EOF >"$HOME/.gemini/settings.json"
 {
   "tools": {
     "sandbox": false,
     "exclude": ["google_web_search", "web_fetch"]
   }
 }
-EOF''',
-        "Creating settings.json"
+EOF""",
+        "Creating settings.json",
     )
 
     # Run Gemini CLI
     print("  Running Gemini CLI...")
     print(f"  Output: {output_file}")
-    
+
     code, stdout, stderr = exec_run(
         container_id,
         f"source $HOME/.nvm/nvm.sh && gemini -p {escaped_prompt} -y -m {llm_model} --output-format stream-json --include-directories /src,/scripts,/output",
@@ -724,7 +783,7 @@ EOF''',
         timeout=args.timeout,
         env=env,
     )
-    
+
     # Write output to file
     with open(output_file, "w") as f:
         if stdout:
@@ -732,16 +791,18 @@ EOF''',
         if stderr:
             f.write("\n--- stderr ---\n")
             f.write(stderr)
-    
+
     return code
 
 
-def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, trajectory_dir):
+def run_agent(
+    args, config, script_path, data_path, prompt, attempt, work_dir, trajectory_dir
+):
     """Unified agent execution workflow.
-    
+
     Handles container setup, workspace preparation, agent installation,
     execution, and output file copying for any supported agent.
-    
+
     Args:
         args: Command line arguments
         config: Task configuration dict
@@ -751,23 +812,23 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
         attempt: Current attempt number
         work_dir: Working directory for this attempt
         trajectory_dir: Directory for trajectory/log files
-        
+
     Returns:
         tuple: (exit_code, poc_file, patch_file, log_file, container_id, agent_exec_time)
     """
     scripts_dir = Path(__file__).parent.absolute()
     build_image = config.get("build_image", args.default_build_image)
     container_id = None
-    
+
     try:
         # Start container
         print("  Starting container...")
-        
+
         # Prepare environment variables (if needed for Claude Code)
         env_vars = {}
         # container_name = None
         container_name = f"{args.agent}-{uuid.uuid4().hex[:8]}"
-        
+
         if args.agent == "claude-code":
             if args.model_provider == "bedrock":
                 aws_creds = get_aws_credentials(args.aws_profile)
@@ -778,7 +839,9 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
             elif args.model_provider == "anthropic":
                 api_key = os.environ.get("ANTHROPIC_API_KEY")
                 if not api_key:
-                    raise RuntimeError("--model-provider anthropic requires ANTHROPIC_API_KEY to be set in the environment")
+                    raise RuntimeError(
+                        "--model-provider anthropic requires ANTHROPIC_API_KEY to be set in the environment"
+                    )
                 env_vars["ANTHROPIC_API_KEY"] = api_key
                 env_vars["ANTHROPIC_MODEL"] = args.anthropic_model_id
             elif args.model_provider == "litellm":
@@ -787,8 +850,10 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
                 env_vars["ANTHROPIC_API_KEY"] = os.environ["OPENAI_API_KEY"]
                 env_vars["ANTHROPIC_MODEL"] = args.litellm_model_id
             else:
-                raise RuntimeError(f"claude-code does not support --model-provider {args.model_provider}")
-        
+                raise RuntimeError(
+                    f"claude-code does not support --model-provider {args.model_provider}"
+                )
+
         # Firewall: two phases. The install phase runs on Docker's default bridge
         # with real internet, because build scripts fetch over protocols an HTTP
         # proxy cannot carry (ffmpeg's fate-rsync over rsync://:873, libbpf over
@@ -816,7 +881,7 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
             run_network = run_firewall.network_name
             run_proxy_env = run_firewall.env_vars()
 
-            install_network = "bridge"   # unrestricted, pre-agent only
+            install_network = "bridge"  # unrestricted, pre-agent only
             print(f"  Firewall: install=bridge (full internet) -> run={run_network}")
             if args.agent == "claude-code":
                 # Keep the CLI off telemetry/update endpoints the allowlist denies.
@@ -830,16 +895,28 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
             container_name=container_name,
             workdir="/src",
             # None => Docker's default bridge for the install phase
-            network=None if install_network == "bridge" else (install_network or run_network),
+            network=(
+                None
+                if install_network == "bridge"
+                else (install_network or run_network)
+            ),
         )
-        
+
         print(f"  Container: {container_id[:12]}")
 
         # Setup workspace (don't copy ground truth PoC - agent shouldn't see it).
         # run_prepare=True moves prepare.sh here, into the install phase, so the
         # agent never needs the network and prepare's cost stops eating its timeout.
-        setup_workspace(container_id, data_path, script_path, args.mode, copy_gt_poc=False,
-                        scripts_dir=scripts_dir, run_prepare=True, env=install_env)
+        setup_workspace(
+            container_id,
+            data_path,
+            script_path,
+            args.mode,
+            copy_gt_poc=False,
+            scripts_dir=scripts_dir,
+            run_prepare=True,
+            env=install_env,
+        )
 
         # Install agent
         install(container_id, args.agent, scripts_dir=scripts_dir, env=install_env)
@@ -854,17 +931,30 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
 
         agent_exec_start = time.time()
         if args.agent == "claude-code":
-            exit_code = _execute_claude_code(container_id, prompt, str(log_file), args, proxy_env=run_proxy_env)
+            exit_code = _execute_claude_code(
+                container_id, prompt, str(log_file), args, proxy_env=run_proxy_env
+            )
         elif args.agent == "codex":
-            exit_code = _execute_codex(container_id, prompt, str(log_file), args, proxy_env=run_proxy_env)
+            exit_code = _execute_codex(
+                container_id, prompt, str(log_file), args, proxy_env=run_proxy_env
+            )
         elif args.agent == "gemini-cli":
-            exit_code = _execute_gemini_cli(container_id, prompt, str(log_file), args, proxy_env=run_proxy_env)
+            exit_code = _execute_gemini_cli(
+                container_id, prompt, str(log_file), args, proxy_env=run_proxy_env
+            )
         else:  # openhands
-            exit_code, stdout, stderr = _execute_openhands(container_id, prompt, args, proxy_env=run_proxy_env)
+            exit_code, stdout, stderr = _execute_openhands(
+                container_id, prompt, args, proxy_env=run_proxy_env
+            )
             # OpenHands may have separate trajectory files
             subprocess.run(
-                ["docker", "cp", f"{container_id}:/agent_trajectory/.", str(trajectory_dir)],
-                capture_output=True
+                [
+                    "docker",
+                    "cp",
+                    f"{container_id}:/agent_trajectory/.",
+                    str(trajectory_dir),
+                ],
+                capture_output=True,
             )
         agent_exec_time = time.time() - agent_exec_start
 
@@ -873,12 +963,22 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
         local_output.mkdir(parents=True, exist_ok=True)
 
         subprocess.run(
-            ["docker", "cp", f"{container_id}:/output/poc.bin", str(local_output / "poc.bin")],
-            capture_output=True
+            [
+                "docker",
+                "cp",
+                f"{container_id}:/output/poc.bin",
+                str(local_output / "poc.bin"),
+            ],
+            capture_output=True,
         )
         subprocess.run(
-            ["docker", "cp", f"{container_id}:/output/fix.patch", str(local_output / "fix.patch")],
-            capture_output=True
+            [
+                "docker",
+                "cp",
+                f"{container_id}:/output/fix.patch",
+                str(local_output / "fix.patch"),
+            ],
+            capture_output=True,
         )
 
         poc_file = local_output / "poc.bin"
@@ -889,6 +989,7 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
     except Exception as e:
         print(f"  Agent execution error: {e}")
         import traceback
+
         traceback.print_exc()
         # Return container_id so caller can clean it up
         return 1, None, None, None, container_id, 0
@@ -897,6 +998,7 @@ def run_agent(args, config, script_path, data_path, prompt, attempt, work_dir, t
 # =============================================================================
 # Main agent loop
 # =============================================================================
+
 
 def run_agent_loop(args, config, script_path, data_path, run_dir):
     """Run agent with optional feedback loop."""
@@ -926,43 +1028,67 @@ def run_agent_loop(args, config, script_path, data_path, run_dir):
             prompt = get_prompt(args, repo_dir, config.get("repo_to_patch"), feedback)
             work_dir = run_dir / f"workspace_attempt_{attempt}"
             work_dir.mkdir(parents=True, exist_ok=True)
-            
-            exit_code, poc_file, patch_file, log_file, agent_container_id, agent_exec_time = run_agent(
-                args, config, script_path, data_path, prompt, attempt, work_dir, trajectory_dir
+
+            (
+                exit_code,
+                poc_file,
+                patch_file,
+                log_file,
+                agent_container_id,
+                agent_exec_time,
+            ) = run_agent(
+                args,
+                config,
+                script_path,
+                data_path,
+                prompt,
+                attempt,
+                work_dir,
+                trajectory_dir,
             )
 
             agent_time = time.time() - agent_start
-            print(f"  Agent: {agent_time:.1f}s ({agent_time/60:.1f}m), exec: {agent_exec_time:.1f}s ({agent_exec_time/60:.1f}m), exit={exit_code}")
+            print(
+                f"  Agent: {agent_time:.1f}s ({agent_time/60:.1f}m), exec: {agent_exec_time:.1f}s ({agent_exec_time/60:.1f}m), exit={exit_code}"
+            )
 
             # Check for generated files
             if args.mode == "e2e" and not poc_file.exists():
                 print("  No PoC generated!")
-                all_attempts.append({
-                    "attempt": attempt,
-                    "agent_exec_seconds": round(agent_exec_time, 2),
-                    "stage1": "no_poc",
-                    "stage2": "skipped",
-                    "stage3": "skipped",
-                    "stage4": "skipped",
-                    "success": False,
-                })
+                all_attempts.append(
+                    {
+                        "attempt": attempt,
+                        "agent_exec_seconds": round(agent_exec_time, 2),
+                        "stage1": "no_poc",
+                        "stage2": "skipped",
+                        "stage3": "skipped",
+                        "stage4": "skipped",
+                        "success": False,
+                    }
+                )
                 if attempt < args.max_attempts:
-                    feedback = "\n=== Previous Attempt Failed ===\nNo poc.bin was generated."
+                    feedback = (
+                        "\n=== Previous Attempt Failed ===\nNo poc.bin was generated."
+                    )
                 continue
 
             if not patch_file.exists():
                 print("  No patch generated!")
-                all_attempts.append({
-                    "attempt": attempt,
-                    "agent_exec_seconds": round(agent_exec_time, 2),
-                    "stage1": "skipped",
-                    "stage2": "skipped",
-                    "stage3": "no_patch",
-                    "stage4": "skipped",
-                    "success": False,
-                })
+                all_attempts.append(
+                    {
+                        "attempt": attempt,
+                        "agent_exec_seconds": round(agent_exec_time, 2),
+                        "stage1": "skipped",
+                        "stage2": "skipped",
+                        "stage3": "no_patch",
+                        "stage4": "skipped",
+                        "success": False,
+                    }
+                )
                 if attempt < args.max_attempts:
-                    feedback = "\n=== Previous Attempt Failed ===\nNo fix.patch was generated."
+                    feedback = (
+                        "\n=== Previous Attempt Failed ===\nNo fix.patch was generated."
+                    )
                 continue
 
             # Copy output files
@@ -981,7 +1107,9 @@ def run_agent_loop(args, config, script_path, data_path, run_dir):
                 agent_container_id = None
 
             # Final validation with fresh containers per stage
-            print(f"\nFinal validation (attempt {attempt}) - fresh container per stage...")
+            print(
+                f"\nFinal validation (attempt {attempt}) - fresh container per stage..."
+            )
             validation_start = time.time()
 
             results = run_final_validation(
@@ -998,12 +1126,15 @@ def run_agent_loop(args, config, script_path, data_path, run_dir):
             # Check results
             if args.mode == "e2e":
                 agent_success = (
-                    results.get("stage1") == "passed" and
-                    results.get("stage2") == "passed" and
-                    results.get("stage3") == "passed"
+                    results.get("stage1") == "passed"
+                    and results.get("stage2") == "passed"
+                    and results.get("stage3") == "passed"
                 )
             else:
-                agent_success = results.get("stage3") == "passed" and results.get("stage4") == "passed"
+                agent_success = (
+                    results.get("stage3") == "passed"
+                    and results.get("stage4") == "passed"
+                )
 
             gt_success = results.get("stage4") == "passed"
             success = agent_success
@@ -1028,7 +1159,9 @@ def run_agent_loop(args, config, script_path, data_path, run_dir):
             else:
                 trajectory_summary = summarize_trajectory(log_file, attempt, args)
                 feedback = format_feedback(
-                    results, attempt, args.mode,
+                    results,
+                    attempt,
+                    args.mode,
                     poc_file=attempt_poc,
                     patch_file=output_dir / f"fix_attempt_{attempt}.patch",
                     trajectory_summary=trajectory_summary,
@@ -1046,6 +1179,7 @@ def run_agent_loop(args, config, script_path, data_path, run_dir):
     except Exception as e:
         print(f"\nError: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         return "error", all_attempts
 
@@ -1059,6 +1193,7 @@ def run_agent_loop(args, config, script_path, data_path, run_dir):
 # =============================================================================
 # Main entry point
 # =============================================================================
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -1081,39 +1216,80 @@ Examples:
     parser.add_argument("task_path", help="Task path (e.g., curl/arvo_66012)")
 
     # Agent selection
-    parser.add_argument("--agent", choices=["claude-code", "openhands", "codex", "gemini-cli"], default="claude-code",
-                        help="Agent backend to use (default: claude-code)")
-    parser.add_argument("--prompt-style", choices=["iterative", "no-test"], default="iterative",
-                        help="Prompt style: iterative (can test) or no-test (default: iterative)")
+    parser.add_argument(
+        "--agent",
+        choices=["claude-code", "openhands", "codex", "gemini-cli"],
+        default="claude-code",
+        help="Agent backend to use (default: claude-code)",
+    )
+    parser.add_argument(
+        "--prompt-style",
+        choices=["iterative", "no-test"],
+        default="iterative",
+        help="Prompt style: iterative (can test) or no-test (default: iterative)",
+    )
 
     # Mode and attempts
-    parser.add_argument("--mode", choices=["patch-only", "e2e"], default="e2e",
-                        help="Mode: e2e (source only) or patch-only (with crash.log+poc)")
-    parser.add_argument("--max-attempts", type=int, default=1,
-                        help="Number of attempts (1=single shot, >1=iterative with feedback)")
-    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
-                        help=f"Agent timeout in seconds (default: {DEFAULT_TIMEOUT})")
-    parser.add_argument("--use-firewall", dest="use_firewall", action="store_true", default=True,
-                        help="Run the agent behind the domain-allowlist firewall (default). "
-                             "Requires the proxy to be up: python -m firewall start")
-    parser.add_argument("--no-firewall", dest="use_firewall", action="store_false",
-                        help="Disable the firewall; the agent gets unrestricted internet.")
+    parser.add_argument(
+        "--mode",
+        choices=["patch-only", "e2e"],
+        default="e2e",
+        help="Mode: e2e (source only) or patch-only (with crash.log+poc)",
+    )
+    parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=1,
+        help="Number of attempts (1=single shot, >1=iterative with feedback)",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT,
+        help=f"Agent timeout in seconds (default: {DEFAULT_TIMEOUT})",
+    )
+    parser.add_argument(
+        "--use-firewall",
+        dest="use_firewall",
+        action="store_true",
+        default=True,
+        help="Run the agent behind the domain-allowlist firewall (default). "
+        "Requires the proxy to be up: python -m firewall start",
+    )
+    parser.add_argument(
+        "--no-firewall",
+        dest="use_firewall",
+        action="store_false",
+        help="Disable the firewall; the agent gets unrestricted internet.",
+    )
 
     # Paths
     parser.add_argument("--data-dir", default="./data/projects")
     parser.add_argument("--script-dir", default="./projects")
-    parser.add_argument("--agent-output", default="agent_output",
-                        help="Base directory for agent output")
-    parser.add_argument("--default-build-image",
-                        default="gcr.io/oss-fuzz-base/base-builder@sha256:8eda74a11e800aead5a041ee479a65b33dab3150d6e89e5694e2b6eb27be98fc")
+    parser.add_argument(
+        "--agent-output", default="agent_output", help="Base directory for agent output"
+    )
+    parser.add_argument(
+        "--default-build-image",
+        default="gcr.io/oss-fuzz-base/base-builder@sha256:8eda74a11e800aead5a041ee479a65b33dab3150d6e89e5694e2b6eb27be98fc",
+    )
 
     # LLM configuration
-    parser.add_argument("--model-provider", choices=["litellm", "bedrock", "anthropic"], default="anthropic",
-                        help="LLM provider (default: anthropic)")
+    parser.add_argument(
+        "--model-provider",
+        choices=["litellm", "bedrock", "anthropic"],
+        default="anthropic",
+        help="LLM provider (default: anthropic)",
+    )
     parser.add_argument("--litellm-model-id", default="openai/gpt-5.2-codex")
-    parser.add_argument("--bedrock-model-id", default="us.anthropic.claude-sonnet-4-5-20250929-v1:0")
-    parser.add_argument("--anthropic-model-id", default="claude-sonnet-4-5",
-                        help="Model ID used with --model-provider anthropic (reads ANTHROPIC_API_KEY from env)")
+    parser.add_argument(
+        "--bedrock-model-id", default="us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+    )
+    parser.add_argument(
+        "--anthropic-model-id",
+        default="claude-sonnet-4-5",
+        help="Model ID used with --model-provider anthropic (reads ANTHROPIC_API_KEY from env)",
+    )
     parser.add_argument("--aws-region", default="us-west-2")
     parser.add_argument("--aws-profile", default=None)
 
@@ -1121,7 +1297,9 @@ Examples:
 
     # Warn if using iterative prompt with OpenHands
     if args.agent == "openhands" and args.prompt_style == "iterative":
-        print("WARNING: Using iterative prompt with OpenHands. Agent will try to test but may fail.")
+        print(
+            "WARNING: Using iterative prompt with OpenHands. Agent will try to test but may fail."
+        )
         print("         Consider using --prompt-style no-test for OpenHands.")
 
     # Setup output directories
@@ -1129,7 +1307,9 @@ Examples:
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     mode_suffix = "e2e" if args.mode == "e2e" else "patch"
     iter_suffix = f"_x{args.max_attempts}" if args.max_attempts > 1 else ""
-    run_dir = Path(args.agent_output) / task_name / f"{timestamp}_{mode_suffix}{iter_suffix}"
+    run_dir = (
+        Path(args.agent_output) / task_name / f"{timestamp}_{mode_suffix}{iter_suffix}"
+    )
     run_dir.mkdir(parents=True, exist_ok=True)
 
     # Litellm create key
@@ -1169,7 +1349,9 @@ Examples:
     data_path = Path(args.data_dir) / args.task_path
 
     # Run agent
-    final_status, all_attempts = run_agent_loop(args, config, script_path, data_path, run_dir)
+    final_status, all_attempts = run_agent_loop(
+        args, config, script_path, data_path, run_dir
+    )
 
     # Save summary
     duration = time.time() - start_time

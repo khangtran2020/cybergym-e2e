@@ -1,0 +1,12 @@
+diff --git a/code/PostProcessing/SortByPTypeProcess.cpp b/code/PostProcessing/SortByPTypeProcess.cpp
+index 27d9e4f74..e4bffa6a4 100644
+--- a/code/PostProcessing/SortByPTypeProcess.cpp
++++ b/code/PostProcessing/SortByPTypeProcess.cpp
+@@ -165,7 +165,6 @@ void SortByPTypeProcess::Execute(aiScene *pScene) {
+             if (!(mConfigRemoveMeshes & mesh->mPrimitiveTypes)) {
+                 *meshIdx = static_cast<unsigned int>(outMeshes.size());
+                 outMeshes.emplace_back(mesh);
+-                pScene->mMeshes[i] = nullptr; // Indicate ownership transfer
+             } else {
+                 delete mesh;
+                 pScene->mMeshes[i] = nullptr;

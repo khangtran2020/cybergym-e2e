@@ -1,0 +1,13 @@
+diff --git a/cram/cram_encode.c b/cram/cram_encode.c
+index d59ea525..4a762f7b 100644
+--- a/cram/cram_encode.c
++++ b/cram/cram_encode.c
+@@ -3401,8 +3401,6 @@ static int process_one_read(cram_fd *fd, cram_container *c,
+ 
+     c->num_bases   += cr->len;
+     cr->apos        = bam_pos(b)+1;
+-    if (cr->apos < 0 || cr->apos > INT64_MAX/2)
+-        goto err;
+     if (c->pos_sorted) {
+         if (cr->apos < s->last_apos && !fd->ap_delta) {
+             c->pos_sorted = 0;

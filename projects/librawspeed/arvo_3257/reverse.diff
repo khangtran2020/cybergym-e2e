@@ -1,0 +1,15 @@
+diff --git a/src/librawspeed/decompressors/SamsungV0Decompressor.cpp b/src/librawspeed/decompressors/SamsungV0Decompressor.cpp
+index 891d0db..d3bc500 100644
+--- a/src/librawspeed/decompressors/SamsungV0Decompressor.cpp
++++ b/src/librawspeed/decompressors/SamsungV0Decompressor.cpp
+@@ -175,10 +175,6 @@ void SamsungV0Decompressor::decompressStrip(uint32 y,
+ 
+     if (dir) {
+       // Upward prediction
+-
+-      if (x + 16 >= width)
+-        ThrowRDE("Upward prediction for the last block of pixels. Raw corrupt");
+-
+       // First we decode even pixels
+       for (int c = 0; c < 16; c += 2) {
+         int b = len[c >> 3];

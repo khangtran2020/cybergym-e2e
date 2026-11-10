@@ -1,0 +1,13 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index 1ab15ba7..6ae6e922 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1491,8 +1491,6 @@ get_next_node:
+             (reader->node->prev->type != XML_DTD_NODE)) {
+ 	    xmlNodePtr tmp = reader->node->prev;
+ 	    if ((tmp->extra & NODE_IS_PRESERVED) == 0) {
+-                if (oldnode == tmp)
+-                    oldnode = NULL;
+ 		xmlUnlinkNode(tmp);
+ 		xmlTextReaderFreeNode(reader, tmp);
+ 	    }

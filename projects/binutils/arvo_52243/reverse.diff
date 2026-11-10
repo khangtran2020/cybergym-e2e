@@ -1,0 +1,13 @@
+diff --git a/bfd/peXXigen.c b/bfd/peXXigen.c
+index 0232a63d558..c5a7f7bf7ac 100644
+--- a/bfd/peXXigen.c
++++ b/bfd/peXXigen.c
+@@ -2026,8 +2026,6 @@ _bfd_XX_print_ce_compressed_pdata (bfd * abfd, void * vfile)
+     }
+ 
+   start = 0;
+-  if (stop > datasize)
+-    stop = datasize;
+ 
+   for (i = start; i < stop; i += onaline)
+     {

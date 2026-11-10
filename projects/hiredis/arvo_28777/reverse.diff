@@ -1,0 +1,27 @@
+diff --git a/fuzzing/format_command_fuzzer.c b/fuzzing/format_command_fuzzer.c
+index de125e0..91adeac 100644
+--- a/fuzzing/format_command_fuzzer.c
++++ b/fuzzing/format_command_fuzzer.c
+@@ -38,19 +38,20 @@
+ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+     char *new_str, *cmd;
+ 
+     if (size < 3)
+         return 0;
+ 
+     new_str = malloc(size+1);
+     if (new_str == NULL)
+         return 0;
+ 
+     memcpy(new_str, data, size);
+     new_str[size] = '\0';
+ 
++    redisFormatCommand(&cmd, new_str);
++
++    if (cmd != NULL)
+-    if (redisFormatCommand(&cmd, new_str) != -1)
+         hi_free(cmd);
+-
+     free(new_str);
+     return 0;
+ }

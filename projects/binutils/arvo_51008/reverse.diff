@@ -1,0 +1,13 @@
+diff --git a/bfd/vms-alpha.c b/bfd/vms-alpha.c
+index 9db476363ee..0ea9ed544f1 100644
+--- a/bfd/vms-alpha.c
++++ b/bfd/vms-alpha.c
+@@ -1570,8 +1570,6 @@ dst_define_location (bfd *abfd, unsigned int loc)
+ 			       (loc + 1) * sizeof (unsigned int));
+       if (PRIV (dst_ptr_offsets) == NULL)
+ 	return false;
+-      memset (PRIV (dst_ptr_offsets) + PRIV (dst_ptr_offsets_count), 0,
+-	      (loc - PRIV (dst_ptr_offsets_count)) * sizeof (unsigned int));
+       PRIV (dst_ptr_offsets_count) = loc + 1;
+     }
+ 

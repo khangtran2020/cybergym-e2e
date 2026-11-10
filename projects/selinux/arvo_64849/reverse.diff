@@ -1,0 +1,13 @@
+diff --git a/libsepol/src/policydb_validate.c b/libsepol/src/policydb_validate.c
+index d86f885e..bd8e9f8f 100644
+--- a/libsepol/src/policydb_validate.c
++++ b/libsepol/src/policydb_validate.c
+@@ -1344,8 +1344,6 @@ bad:
+ 
+ static int validate_scope_index(sepol_handle_t *handle, const scope_index_t *scope_index, validate_t flavors[])
+ {
+-	if (!ebitmap_is_empty(&scope_index->scope[SYM_COMMONS]))
+-		goto bad;
+ 	if (validate_ebitmap(&scope_index->p_classes_scope, &flavors[SYM_CLASSES]))
+ 		goto bad;
+ 	if (validate_ebitmap(&scope_index->p_roles_scope, &flavors[SYM_ROLES]))

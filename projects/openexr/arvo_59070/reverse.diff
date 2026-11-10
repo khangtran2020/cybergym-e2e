@@ -1,0 +1,15 @@
+diff --git a/src/lib/OpenEXRCore/internal_dwa_classifier.h b/src/lib/OpenEXRCore/internal_dwa_classifier.h
+index d34497e4..e1114baf 100644
+--- a/src/lib/OpenEXRCore/internal_dwa_classifier.h
++++ b/src/lib/OpenEXRCore/internal_dwa_classifier.h
+@@ -102,9 +102,8 @@ Classifier_read (
+             if (curin[len] == '\0') break;
+             suffix[len] = (char) curin[len];
+         }
++        len += 1;
+         if (len == 128 + 1) return EXR_ERR_CORRUPT_CHUNK;
+-        // account for extra byte for nil terminator
+-        len += 1;
+ 
+         mem = alloc_fn (len);
+         if (!mem) return EXR_ERR_OUT_OF_MEMORY;

@@ -1,0 +1,13 @@
+diff --git a/dict.c b/dict.c
+index 36b49541..863d8e21 100644
+--- a/dict.c
++++ b/dict.c
+@@ -679,7 +679,7 @@ xmlDictLookupInternal(xmlDictPtr dict, const xmlChar *prefix,
+     if (found)
+         return(entry);
+ 
++    if (dict->subdict != NULL) {
+-    if ((dict->subdict != NULL) && (dict->subdict->size > 0)) {
+         xmlDictEntry *subEntry;
+         unsigned subHashValue;
+ 

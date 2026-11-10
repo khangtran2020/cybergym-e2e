@@ -1,0 +1,13 @@
+diff --git a/src/lib_json/json_reader.cpp b/src/lib_json/json_reader.cpp
+index 23cbe60..2dca4ca 100644
+--- a/src/lib_json/json_reader.cpp
++++ b/src/lib_json/json_reader.cpp
+@@ -1270,7 +1270,7 @@ void OurReader::skipSpaces() {
+ void OurReader::skipBom(bool skipBom) {
+   // The default behavior is to skip BOM.
+   if (skipBom) {
++    if (strncmp(begin_, "\xEF\xBB\xBF", 3) == 0) {
+-    if ((end_ - begin_) >= 3 && strncmp(begin_, "\xEF\xBB\xBF", 3) == 0) {
+       begin_ += 3;
+       current_ = begin_;
+     }

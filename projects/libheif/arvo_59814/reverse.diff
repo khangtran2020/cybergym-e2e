@@ -1,0 +1,28 @@
+diff --git a/fuzzing/color_conversion_fuzzer.cc b/fuzzing/color_conversion_fuzzer.cc
+index 2901d6f..9ce9bd5 100644
+--- a/fuzzing/color_conversion_fuzzer.cc
++++ b/fuzzing/color_conversion_fuzzer.cc
+@@ -64,10 +64,7 @@ static bool read_plane(BitstreamRange* range,
+   if (width <= 0 || height <= 0) {
+     return false;
+   }
++  if (!range->prepare_read(static_cast<uint64_t>(width) * height)) {
+-  if (std::numeric_limits<size_t>::max()/width/height == 0) {
+-    return false;
+-  }
+-  if (!range->prepare_read(static_cast<size_t>(width) * height)) {
+     return false;
+   }
+   if (!image->add_plane(channel, width, height, bit_depth)) {
+@@ -90,10 +87,7 @@ static bool read_plane_interleaved(BitstreamRange* range,
+   if (width <= 0 || height <= 0) {
+     return false;
+   }
++  if (!range->prepare_read(static_cast<uint64_t>(width) * height * comps)) {
+-  if (std::numeric_limits<size_t>::max()/width/height/comps == 0) {
+-    return false;
+-  }
+-  if (!range->prepare_read(static_cast<size_t>(width) * height * comps)) {
+     return false;
+   }
+   if (!image->add_plane(channel, width, height, bit_depth)) {

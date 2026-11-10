@@ -1,0 +1,13 @@
+diff --git a/src/irc/core/irc.c b/src/irc/core/irc.c
+index 8ecda85b..a5bd608b 100644
+--- a/src/irc/core/irc.c
++++ b/src/irc/core/irc.c
+@@ -395,8 +395,6 @@ static void unescape_tag(char *tag)
+ 	for (; *tmp != '\0'; tmp++, tag++) {
+ 		if (*tmp == '\\') {
+ 			tmp++;
+-			if (*tmp == '\0')
+-				break;
+ 			switch (*tmp) {
+ 			case ':':
+ 				*tag = ';';

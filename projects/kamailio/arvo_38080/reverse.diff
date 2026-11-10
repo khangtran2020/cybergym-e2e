@@ -1,0 +1,30 @@
+diff --git a/src/core/parser/parse_addr_spec.c b/src/core/parser/parse_addr_spec.c
+index 99138dcaf4..0b8cddc8e2 100644
+--- a/src/core/parser/parse_addr_spec.c
++++ b/src/core/parser/parse_addr_spec.c
+@@ -225,12 +225,6 @@ static char *parse_to_param(char *const buffer, const char *const end,
+ 			case '\\':
+ 				switch(status) {
+ 					case PARA_VALUE_QUOTED:
+-						if(tmp+1>=end) {
+-							LM_ERR("unexpected end of data in status %d - start: %p"
+-									" - end: %p - crt: %p\n",
+-								status, buffer, end , tmp);
+-							goto error;
+-						}
+ 						switch(*(tmp + 1)) {
+ 							case '\r':
+ 							case '\n':
+@@ -247,12 +241,6 @@ static char *parse_to_param(char *const buffer, const char *const end,
+ 			case '"':
+ 				switch(status) {
+ 					case S_PARA_VALUE:
+-						if(tmp+1>=end) {
+-							LM_ERR("unexpected end of data in status %d - start: %p"
+-									" - end: %p - crt: %p\n",
+-								status, buffer, end , tmp);
+-							goto error;
+-						}
+ 						param->value.s = tmp + 1;
+ 						status = PARA_VALUE_QUOTED;
+ 						break;

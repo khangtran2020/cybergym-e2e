@@ -1,0 +1,28 @@
+diff --git a/include/assimp/IOStreamBuffer.h b/include/assimp/IOStreamBuffer.h
+index bbb5ef256..d54774759 100644
+--- a/include/assimp/IOStreamBuffer.h
++++ b/include/assimp/IOStreamBuffer.h
+@@ -261,11 +261,6 @@ AI_FORCE_INLINE bool IOStreamBuffer<T>::getNextDataLine(std::vector<T> &buffer,
+         buffer[i] = m_cache[m_cachePos];
+         ++m_cachePos;
+         ++i;
+-
+-        if(i == buffer.size()) {
+-            buffer.resize(buffer.size() * 2);
+-        }
+-
+         if (m_cachePos >= size()) {
+             break;
+         }
+@@ -313,11 +308,6 @@ AI_FORCE_INLINE bool IOStreamBuffer<T>::getNextLine(std::vector<T> &buffer) {
+         buffer[i] = m_cache[m_cachePos];
+         ++m_cachePos;
+         ++i;
+-
+-        if(i == buffer.size()) {
+-            buffer.resize(buffer.size() * 2);
+-        }
+-
+         if (m_cachePos >= m_cacheSize) {
+             if (!readNextBlock()) {
+                 return false;

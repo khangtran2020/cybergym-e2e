@@ -1,0 +1,18 @@
+diff --git a/src/librawspeed/common/Spline.h b/src/librawspeed/common/Spline.h
+index fa87f58..ebb84b0 100644
+--- a/src/librawspeed/common/Spline.h
++++ b/src/librawspeed/common/Spline.h
+@@ -162,8 +162,11 @@ public:
+         if (!std::is_floating_point<value_type>::value) {
+           interpolated = std::max(
+               interpolated, double(std::numeric_limits<value_type>::min()));
++
++          assert(interpolated <=
++                 double(std::numeric_limits<value_type>::max()));
++          // interpolated = std::min(interpolated,
++          // double(std::numeric_limits<value_type>::max()));
+-          interpolated = std::min(
+-              interpolated, double(std::numeric_limits<value_type>::max()));
+         }
+ 
+         curve[x] = interpolated;

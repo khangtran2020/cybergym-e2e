@@ -1,0 +1,14 @@
+diff --git a/pdf/pdf_font.c b/pdf/pdf_font.c
+index 16aa75a6b..7bc8cb75a 100644
+--- a/pdf/pdf_font.c
++++ b/pdf/pdf_font.c
+@@ -329,8 +329,7 @@ pdfi_open_CIDFont_substitute_file(pdf_context * ctx, pdf_dict *font_dict, pdf_di
+         const char *fsprefix = "CIDFont/";
+         const int fsprefixlen = strlen(fsprefix);
+ 
++        if (cidname == NULL || cidname->type != PDF_NAME)
+-        if (cidname == NULL || cidname->type != PDF_NAME
+-         || fsprefixlen + cidname->length >= gp_file_name_sizeof)
+             goto exit;
+ 
+         memcpy(fontfname, fsprefix, fsprefixlen);

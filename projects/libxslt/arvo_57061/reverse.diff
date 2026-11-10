@@ -1,0 +1,15 @@
+diff --git a/libxslt/pattern.c b/libxslt/pattern.c
+index 00298392..81655660 100644
+--- a/libxslt/pattern.c
++++ b/libxslt/pattern.c
+@@ -311,6 +311,10 @@ xsltCompMatchAdd(xsltParserContextPtr ctxt, xsltCompMatchPtr comp,
+ 	     "xsltCompMatchAdd: memory re-allocation failure.\n");
+ 	    if (ctxt->style != NULL)
+ 		ctxt->style->errors++;
++	    if (value)
++	        xmlFree(value);
++	    if (value2)
++	        xmlFree(value2);
+ 	    return (-1);
+ 	}
+         comp->maxStep *= 2;

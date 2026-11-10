@@ -1,0 +1,15 @@
+diff --git a/src/pkcs15init/pkcs15-cflex.c b/src/pkcs15init/pkcs15-cflex.c
+index 8ede1ebd4..f288bb43d 100644
+--- a/src/pkcs15init/pkcs15-cflex.c
++++ b/src/pkcs15init/pkcs15-cflex.c
+@@ -652,10 +652,6 @@ static int cflex_get_keyfiles(sc_profile_t *profile, sc_card_t *card,
+ 	sc_path_t	path = *df_path;
+ 	int		r;
+ 
+-	if (path.len <= 2) {
+-		LOG_FUNC_RETURN(card->ctx, SC_ERROR_INVALID_ARGUMENTS);
+-	}
+-
+ 	/* Get the private key file */
+ 	r = sc_profile_get_file_by_path(profile, &path, prkf);
+ 	if (r < 0) {

@@ -1,0 +1,13 @@
+diff --git a/src/metadata/identify.cpp b/src/metadata/identify.cpp
+index 73d3724f..5352b691 100644
+--- a/src/metadata/identify.cpp
++++ b/src/metadata/identify.cpp
+@@ -708,7 +708,7 @@ void LibRaw::identify()
+     short nesting = -1;
+     short nTrack = -1;
+     short TrackType;
++    char AtomNameStack[128];
+-    char AtomNameStack[129];
+     strcpy(make, "Canon");
+ 
+     szAtomList = ifp->size();

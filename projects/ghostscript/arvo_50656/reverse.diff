@@ -1,0 +1,14 @@
+diff --git a/base/ttinterp.c b/base/ttinterp.c
+index 23a7c949e..63846c8d8 100644
+--- a/base/ttinterp.c
++++ b/base/ttinterp.c
+@@ -2325,8 +2325,7 @@ static int nInstrCount=0;
+ 
+     L = (Int)CUR.code[CUR.IP + 1];
+ 
++    if ( BOUNDS( L, CUR.stackSize+1-CUR.top ) )
+-    if ( BOUNDS( L, CUR.stackSize+1-CUR.top )
+-      || BOUNDS( L, CUR.codeSize+1-CUR.IP))
+     {
+       CUR.error = TT_Err_Stack_Overflow;
+       return;

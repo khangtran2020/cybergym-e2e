@@ -1,0 +1,13 @@
+diff --git a/src/libtinysparql/tracker-deserializer-turtle.c b/src/libtinysparql/tracker-deserializer-turtle.c
+index 1dae935ed..da1effc6d 100644
+--- a/src/libtinysparql/tracker-deserializer-turtle.c
++++ b/src/libtinysparql/tracker-deserializer-turtle.c
+@@ -228,8 +228,6 @@ parse_token (TrackerDeserializerTurtle *deserializer,
+ 	                                              &size);
+ 	if (size == 0)
+ 		return FALSE;
+-	if (size < (gsize) len)
+-		return FALSE;
+ 	if (strncasecmp (buffer, token, len) != 0)
+ 		return FALSE;
+ 	if (!seek_input (deserializer, len))

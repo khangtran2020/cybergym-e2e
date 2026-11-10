@@ -1,0 +1,13 @@
+diff --git a/src/hunspell/affixmgr.cxx b/src/hunspell/affixmgr.cxx
+index 1c2b8b9..d6010b2 100644
+--- a/src/hunspell/affixmgr.cxx
++++ b/src/hunspell/affixmgr.cxx
+@@ -4820,7 +4820,7 @@ int AffixMgr::redundant_condition(char ft,
+                              linenum);
+             return 0;
+           }
++        } else {
+-        } else if (j > 0) {
+           in = 0;
+           do {
+             j--;

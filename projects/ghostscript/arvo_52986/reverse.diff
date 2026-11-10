@@ -1,0 +1,13 @@
+diff --git a/devices/vector/gdevpdtb.c b/devices/vector/gdevpdtb.c
+index 7f424398d..77341ccb4 100644
+--- a/devices/vector/gdevpdtb.c
++++ b/devices/vector/gdevpdtb.c
+@@ -329,8 +329,6 @@ pdf_base_font_alloc(gx_device_pdf *pdev, pdf_base_font_t **ppbfont,
+             emprintf1(pdev->memory,
+                       "Can't embed the complete font %s due to font error.\n",
+                       buf);
+-            gs_free_copied_font(copied);
+-            copied = NULL;
+             goto fail;
+         }
+         if (code < 0) {

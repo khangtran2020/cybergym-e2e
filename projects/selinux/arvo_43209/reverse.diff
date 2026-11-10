@@ -1,0 +1,16 @@
+diff --git a/libsepol/cil/src/cil_resolve_ast.c b/libsepol/cil/src/cil_resolve_ast.c
+index 69a8a2ed..73115c55 100644
+--- a/libsepol/cil/src/cil_resolve_ast.c
++++ b/libsepol/cil/src/cil_resolve_ast.c
+@@ -755,11 +755,6 @@ int cil_resolve_classcommon(struct cil_tree_node *current, void *extra_args)
+ 	if (rc != SEPOL_OK) {
+ 		goto exit;
+ 	}
+-	if (NODE(class_datum)->flavor != CIL_CLASS) {
+-		cil_log(CIL_ERR, "Class %s is not a kernel class and cannot be associated with common %s\n", clscom->class_str, clscom->common_str);
+-		rc = SEPOL_ERR;
+-		goto exit;
+-	}
+ 
+ 	rc = cil_resolve_name(current, clscom->common_str, CIL_SYM_COMMONS, extra_args, &common_datum);
+ 	if (rc != SEPOL_OK) {

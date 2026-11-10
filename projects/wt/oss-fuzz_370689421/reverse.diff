@@ -1,0 +1,12 @@
+diff --git a/fuzz/fuzz-eval.C b/fuzz/fuzz-eval.C
+index aa927afa..8da282d2 100644
+--- a/fuzz/fuzz-eval.C
++++ b/fuzz/fuzz-eval.C
+@@ -24,7 +24,6 @@ namespace {
+     } catch (Wt::WInvalidFormatException& ife) {
+     } catch (Wt::WInvalidOperationException& ioe) {
+     }
+-    return 0;
+   }
+ }
+ 

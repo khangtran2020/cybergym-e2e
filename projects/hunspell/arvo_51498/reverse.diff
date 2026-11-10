@@ -1,0 +1,14 @@
+diff --git a/src/hunspell/affixmgr.cxx b/src/hunspell/affixmgr.cxx
+index ef3cde5..99a7005 100644
+--- a/src/hunspell/affixmgr.cxx
++++ b/src/hunspell/affixmgr.cxx
+@@ -1677,9 +1677,6 @@ struct hentry* AffixMgr::compound_check(const std::string& word,
+           cmax = len - cpdmin + 1;
+         }
+ 
+-	if (i > st.size())
+-	    return NULL;
+-
+         ch = st[i];
+         st[i] = '\0';
+ 

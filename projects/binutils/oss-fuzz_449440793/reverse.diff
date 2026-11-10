@@ -1,0 +1,13 @@
+diff --git a/bfd/coff-alpha.c b/bfd/coff-alpha.c
+index 9a621e93c5b..fcc8aef6673 100644
+--- a/bfd/coff-alpha.c
++++ b/bfd/coff-alpha.c
+@@ -2204,8 +2204,6 @@ alpha_ecoff_get_elt_at_filepos (bfd *archive, file_ptr filepos,
+ 	  if (left == 0)
+ 	    break;
+ 	}
+-      if (left != 0)
+-	goto error_return;
+     }
+ 
+   /* Now the uncompressed file contents are in buf.  */

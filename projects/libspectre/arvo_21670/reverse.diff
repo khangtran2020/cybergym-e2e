@@ -1,0 +1,15 @@
+diff --git a/libspectre/ps.c b/libspectre/ps.c
+index 03d462a..bb45c9a 100644
+--- a/libspectre/ps.c
++++ b/libspectre/ps.c
+@@ -448,10 +448,6 @@ psscan(FILE *file, const char *filename, int scanstyle)
+ 	}
+     }
+ 
+-    // Initialize text so that all the strcmp we do after sscanf don't
+-    // end up reading uninitialized memory if the sscanf fails
+-    text[0] = '\0';
+-
+     /* Header comments */
+     
+     /* Header should start with "%!PS-Adobe-", but some programms omit

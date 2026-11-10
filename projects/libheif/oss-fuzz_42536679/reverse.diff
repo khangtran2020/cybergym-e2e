@@ -1,0 +1,17 @@
+diff --git a/libheif/context.cc b/libheif/context.cc
+index 3b6a373f..b3666d32 100644
+--- a/libheif/context.cc
++++ b/libheif/context.cc
+@@ -470,12 +470,6 @@ Error HeifContext::check_resolution(uint32_t width, uint32_t height) const {
+                   sstr.str());
+   }
+ 
+-  if (width==0 || height==0) {
+-    return Error(heif_error_Memory_allocation_error,
+-                 heif_suberror_Invalid_image_size,
+-                 "zero width or height");
+-  }
+-
+   return Error::Ok;
+ }
+ 

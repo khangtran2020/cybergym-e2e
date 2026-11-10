@@ -1,0 +1,41 @@
+diff --git a/usbredirparser/usbredirparser.c b/usbredirparser/usbredirparser.c
+index 784f2e1..774e2b7 100644
+--- a/usbredirparser/usbredirparser.c
++++ b/usbredirparser/usbredirparser.c
+@@ -21,7 +21,6 @@
+ #include "config.h"
+ 
+ #include <stdbool.h>
+-#include <stddef.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <stdarg.h>
+@@ -1657,9 +1656,8 @@ int usbredirparser_serialize(struct usbredirparser *parser_pub,
+     struct usbredirparser_priv *parser =
+         (struct usbredirparser_priv *)parser_pub;
+     struct usbredirparser_buf *wbuf;
++    uint8_t *write_buf_count_pos, *state = NULL, *pos = NULL;
+-    uint8_t *state = NULL, *pos = NULL;
+     uint32_t write_buf_count = 0, len, remain = 0;
+-    ptrdiff_t write_buf_count_pos;
+ 
+     *state_dest = NULL;
+     *state_len = 0;
+@@ -1704,7 +1702,7 @@ int usbredirparser_serialize(struct usbredirparser *parser_pub,
+                        parser->data, parser->data_read, "packet-data"))
+         return -1;
+ 
++    write_buf_count_pos = pos;
+-    write_buf_count_pos = pos - state;
+     /* To be replaced with write_buf_count later */
+     if (serialize_int(parser, &state, &pos, &remain, 0, "write_buf_count"))
+         return -1;
+@@ -1719,7 +1717,7 @@ int usbredirparser_serialize(struct usbredirparser *parser_pub,
+         wbuf = wbuf->next;
+     }
+     /* Patch in write_buf_count */
++    memcpy(write_buf_count_pos, &write_buf_count, sizeof(int32_t));
+-    memcpy(state + write_buf_count_pos, &write_buf_count, sizeof(int32_t));
+ 
+     /* Patch in length */
+     len = pos - state;

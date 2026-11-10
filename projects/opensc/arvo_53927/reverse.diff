@@ -1,0 +1,13 @@
+diff --git a/src/pkcs15init/pkcs15-lib.c b/src/pkcs15init/pkcs15-lib.c
+index 3df03c6e..91cee373 100644
+--- a/src/pkcs15init/pkcs15-lib.c
++++ b/src/pkcs15init/pkcs15-lib.c
+@@ -685,8 +685,6 @@ sc_pkcs15init_rmdir(struct sc_pkcs15_card *p15card, struct sc_profile *profile,
+ 
+ 		path = df->path;
+ 		path.len += 2;
+-		if (path.len > SC_MAX_PATH_SIZE)
+-			return SC_ERROR_INTERNAL;
+ 
+ 		nfids = r / 2;
+ 		while (r >= 0 && nfids--) {

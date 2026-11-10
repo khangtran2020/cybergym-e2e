@@ -1,0 +1,16 @@
+diff --git a/bfd/coffgen.c b/bfd/coffgen.c
+index 0b764b0c45f..774edf76f24 100644
+--- a/bfd/coffgen.c
++++ b/bfd/coffgen.c
+@@ -1753,7 +1753,10 @@ coff_get_normalized_symtab (bfd *abfd)
+ 
+       /* PR 17512: Prevent buffer overrun.  */
+       if (symbol_ptr->u.syment.n_numaux > ((raw_end - 1) - raw_src) / symesz)
++	{
++	  bfd_release (abfd, internal);
++	  return NULL;
++	}
+-	return NULL;
+ 
+       for (i = 0;
+ 	   i < symbol_ptr->u.syment.n_numaux;

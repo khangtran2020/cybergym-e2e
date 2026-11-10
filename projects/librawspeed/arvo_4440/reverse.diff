@@ -1,0 +1,32 @@
+diff --git a/src/librawspeed/common/RawImage.cpp b/src/librawspeed/common/RawImage.cpp
+index 7a4f33f..d4e70a2 100644
+--- a/src/librawspeed/common/RawImage.cpp
++++ b/src/librawspeed/common/RawImage.cpp
+@@ -226,10 +226,11 @@ uchar8* RawImageData::getData() const {
+ }
+ 
+ uchar8* RawImageData::getData(uint32 x, uint32 y) {
++  if (static_cast<int>(x) >= dim.x)
+-  if (x >= static_cast<unsigned>(uncropped_dim.x))
+     ThrowRDE("X Position outside image requested.");
++  if (static_cast<int>(y) >= dim.y) {
+-  if (y >= static_cast<unsigned>(uncropped_dim.y))
+     ThrowRDE("Y Position outside image requested.");
++  }
+ 
+   x += mOffset.x;
+   y += mOffset.y;
+@@ -241,10 +242,11 @@ uchar8* RawImageData::getData(uint32 x, uint32 y) {
+ }
+ 
+ uchar8* RawImageData::getDataUncropped(uint32 x, uint32 y) {
++  if (static_cast<int>(x) >= uncropped_dim.x)
+-  if (x >= static_cast<unsigned>(uncropped_dim.x))
+     ThrowRDE("X Position outside image requested.");
++  if (static_cast<int>(y) >= uncropped_dim.y) {
+-  if (y >= static_cast<unsigned>(uncropped_dim.y))
+     ThrowRDE("Y Position outside image requested.");
++  }
+ 
+   if (!data)
+     ThrowRDE("Data not yet allocated.");

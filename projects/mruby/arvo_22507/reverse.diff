@@ -1,0 +1,13 @@
+diff --git a/mrbgems/mruby-sprintf/src/sprintf.c b/mrbgems/mruby-sprintf/src/sprintf.c
+index 4ad3a34a5..37f446711 100644
+--- a/mrbgems/mruby-sprintf/src/sprintf.c
++++ b/mrbgems/mruby-sprintf/src/sprintf.c
+@@ -1041,7 +1041,7 @@ retry:
+         mrb_value val = GETARG();
+         double fval;
+         mrb_int need = 6;
++        char fbuf[32];
+-        char fbuf[64];
+ 
+         fval = mrb_float(mrb_Float(mrb, val));
+         if (!isfinite(fval)) {

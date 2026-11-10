@@ -1,0 +1,20 @@
+diff --git a/Sources/SwiftProtobuf/TextFormatScanner.swift b/Sources/SwiftProtobuf/TextFormatScanner.swift
+index f0c0699d..b3b2e89c 100644
+--- a/Sources/SwiftProtobuf/TextFormatScanner.swift
++++ b/Sources/SwiftProtobuf/TextFormatScanner.swift
+@@ -898,7 +898,6 @@ internal struct TextFormatScanner {
+         if p == end {
+             return nil
+         }
+-        let start = p
+         let c = p[0]
+         let negated: Bool
+         if c == asciiMinus {
+@@ -914,7 +913,6 @@ internal struct TextFormatScanner {
+             || skipOptionalKeyword(bytes: infinity)) {
+             return negated ? -Float.infinity : Float.infinity
+         }
+-        p = start
+         return nil
+     }
+ 

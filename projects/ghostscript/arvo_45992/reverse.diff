@@ -1,0 +1,14 @@
+diff --git a/base/gximage3.c b/base/gximage3.c
+index cf5e31cb6..609e58ea8 100644
+--- a/base/gximage3.c
++++ b/base/gximage3.c
+@@ -209,8 +209,7 @@ gx_begin_image3_generic(gx_device * dev,
+     int code;
+ 
+     /* Validate the parameters. */
++    if (pim->Height <= 0 || pim->MaskDict.Height <= 0)
+-    if (pim->Width <= 0 || pim->MaskDict.Width <= 0 ||
+-        pim->Height <= 0 || pim->MaskDict.Height <= 0)
+         return_error(gs_error_rangecheck);
+     switch (pim->InterleaveType) {
+         default:

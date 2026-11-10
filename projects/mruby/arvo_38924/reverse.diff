@@ -1,0 +1,15 @@
+diff --git a/mrbgems/mruby-compiler/core/codegen.c b/mrbgems/mruby-compiler/core/codegen.c
+index 380cd9317..48543bd7e 100644
+--- a/mrbgems/mruby-compiler/core/codegen.c
++++ b/mrbgems/mruby-compiler/core/codegen.c
+@@ -467,10 +467,6 @@ mrb_prev_pc(codegen_scope *s, const mrb_code *pc)
+ static struct mrb_insn_data
+ mrb_last_insn(codegen_scope *s)
+ {
+-  if (s->pc == 0) {
+-    struct mrb_insn_data data = { OP_NOP, 0 };
+-    return data;
+-  }
+   return mrb_decode_insn(&s->iseq[s->lastpc]);
+ }
+ 

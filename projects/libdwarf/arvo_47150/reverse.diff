@@ -1,0 +1,23 @@
+diff --git a/src/lib/libdwarf/dwarf_debuglink.c b/src/lib/libdwarf/dwarf_debuglink.c
+index e3b9029b..f07bafbd 100644
+--- a/src/lib/libdwarf/dwarf_debuglink.c
++++ b/src/lib/libdwarf/dwarf_debuglink.c
+@@ -75,18 +75,10 @@ is_full_path(char *path,int joinchar)
+ {
+     unsigned char c = path[0];
+     unsigned char c1 = 0;
+-    if (!c) {
+-        /* empty string. */
+-        return FALSE;
+-    }
+     if (c == joinchar) {
+         return TRUE;
+     }
+     c1 = path[1];
+-    if (!c1) {
+-        /* No second character */
+-        return FALSE;
+-    }
+     if (c1 == ':') {
+         /*  Windows full path, we assume
+             We just assume nobody would be silly enough

@@ -1,0 +1,80 @@
+diff --git a/src/p_lx_elf.cpp b/src/p_lx_elf.cpp
+index 843307a5..25f0cbab 100644
+--- a/src/p_lx_elf.cpp
++++ b/src/p_lx_elf.cpp
+@@ -8650,27 +8650,25 @@ unsigned PackLinuxElf::elf_hash(char const *p)
+ Elf32_Sym const *PackLinuxElf32::elf_lookup(char const *name) const
+ {
+     if (hashtab && dynsym && dynstr) {
++        unsigned const nbucket = get_te32(&hashtab[0]);
+-        unsigned const n_bucket = get_te32(&hashtab[0]);
+         unsigned const *const buckets = &hashtab[2];
++        unsigned const *const chains = &buckets[nbucket];
++        if (nbucket) {
++            unsigned const m = elf_hash(name) % nbucket;
+-        unsigned const *const chains = &buckets[n_bucket];
+-        if (n_bucket) {
+-            unsigned const m = elf_hash(name) % n_bucket;
+             unsigned nvisit = 0;
+             unsigned si;
++            for (si= get_te32(&buckets[m]); si; ) {
+-            if ((file_size + file_image) <= (void const *)chains) {
+-                throwCantPack("bad n_bucket %#x\n", n_bucket);
+-            }
+-            for (si= get_te32(&buckets[m]); si; si = get_te32(&chains[si])) {
+-                if (n_bucket <= si) {
+-                    throwCantPack("bad DT_HASH chain %d\n", si);
+-                }
+                 char const *const p= get_dynsym_name(si, (unsigned)-1);
+                 if (p && 0==strcmp(name, p)) {
+                     return &dynsym[si];
+                 }
++                if (nbucket <= ++nvisit) {
+-                if (n_bucket <= ++nvisit) {
+                     throwCantPack("circular DT_HASH chain %d\n", si);
+                 }
++                si= get_te32(&chains[si]);
++                if (nbucket <= si) { // bad hashtab
++                    break;
++                }
+             }
+         }
+     }
+@@ -8739,27 +8737,25 @@ Elf32_Sym const *PackLinuxElf32::elf_lookup(char const *name) const
+ Elf64_Sym const *PackLinuxElf64::elf_lookup(char const *name) const
+ {
+     if (hashtab && dynsym && dynstr) {
++        unsigned const nbucket = get_te32(&hashtab[0]);
+-        unsigned const n_bucket = get_te32(&hashtab[0]);
+         unsigned const *const buckets = &hashtab[2];
++        unsigned const *const chains = &buckets[nbucket];
++        if (nbucket) { // -rust-musl can have "empty" hashtab
++            unsigned const m = elf_hash(name) % nbucket;
+-        unsigned const *const chains = &buckets[n_bucket];
+-        if (n_bucket) { // -rust-musl can have "empty" hashtab
+-            unsigned const m = elf_hash(name) % n_bucket;
+             unsigned nvisit = 0;
+             unsigned si;
++            for (si= get_te32(&buckets[m]); si; ) {
+-            if ((file_size + file_image) <= (void const *)chains) {
+-                throwCantPack("bad n_bucket %#x\n", n_bucket);
+-            }
+-            for (si= get_te32(&buckets[m]); si; si = get_te32(&chains[si])) {
+-                if (n_bucket <= si) {
+-                    throwCantPack("bad DT_HASH chain %d\n", si);
+-                }
+                 char const *const p= get_dynsym_name(si, (unsigned)-1);
+                 if (p && 0==strcmp(name, p)) {
+                     return &dynsym[si];
+                 }
++                if (nbucket <= ++nvisit) {
+-                if (n_bucket <= ++nvisit) {
+                     throwCantPack("circular DT_HASH chain %d\n", si);
+                 }
++                si = get_te32(&chains[si]);
++                if (nbucket <= si) { // bad hashtab
++                    break;
++                }
+             }
+         }
+     }

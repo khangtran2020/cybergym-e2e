@@ -1,0 +1,13 @@
+diff --git a/bfd/pef.c b/bfd/pef.c
+index e8672a40da7..334d802eb75 100644
+--- a/bfd/pef.c
++++ b/bfd/pef.c
+@@ -181,7 +181,7 @@ bfd_pef_parse_traceback_table (bfd *abfd,
+ 
+       /* Strip leading period inserted by compiler.  */
+       if (namebuf[0] == '.')
++	memmove (namebuf, namebuf + 1, name.name_len + 1);
+-	memmove (namebuf, namebuf + 1, name.name_len);
+ 
+       sym->name = namebuf;
+ 

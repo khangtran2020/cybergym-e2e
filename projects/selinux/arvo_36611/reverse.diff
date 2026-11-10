@@ -1,0 +1,14 @@
+diff --git a/libsepol/cil/src/cil_resolve_ast.c b/libsepol/cil/src/cil_resolve_ast.c
+index a4de1c75..18007324 100644
+--- a/libsepol/cil/src/cil_resolve_ast.c
++++ b/libsepol/cil/src/cil_resolve_ast.c
+@@ -87,8 +87,7 @@ static struct cil_name * __cil_insert_name(struct cil_db *db, hashtab_key_t key,
+ 	if (macro != NULL && macro->params != NULL) {
+ 		struct cil_list_item *item;
+ 		cil_list_for_each(item, macro->params) {
++			if (((struct cil_param*)item->data)->str == key) {
+-			struct cil_param *param = item->data;
+-			if (param->flavor == CIL_NAME && param->str == key) {
+ 				return NULL;
+ 			}
+ 		}

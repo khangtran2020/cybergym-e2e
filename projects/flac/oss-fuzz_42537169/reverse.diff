@@ -1,0 +1,12 @@
+diff --git a/src/flac/decode.c b/src/flac/decode.c
+index 099348b6..6a89b144 100644
+--- a/src/flac/decode.c
++++ b/src/flac/decode.c
+@@ -1590,7 +1590,6 @@ void metadata_callback(const FLAC__StreamDecoder *decoder, const FLAC__StreamMet
+ 					decoder_session->abort_flag = true;
+ 					return;
+ 				}
+-				decoder_session->replaygain.apply = false;
+ 			}
+ 			else {
+ 				const char *ls[] = { "no", "peak", "hard" };
