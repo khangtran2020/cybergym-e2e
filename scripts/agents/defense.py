@@ -369,7 +369,7 @@ def run_final_validation(
     Returns:
         dict with stage1, stage2, stage3, stage4 status values
     """
-    scripts_dir = Path(__file__).parent.absolute()
+    scripts_dir = Path(__file__).resolve().parent.parent
     results = {"stage1": None, "stage2": None, "stage3": None, "stage4": None}
 
     # Determine which stages to run
@@ -801,7 +801,7 @@ def run_agent(
     Returns:
         tuple: (exit_code, poc_file, patch_file, log_file, container_id, agent_exec_time)
     """
-    scripts_dir = Path(__file__).parent.absolute()
+    scripts_dir = Path(__file__).resolve().parent.parent
     build_image = config.get("build_image", args.default_build_image)
     container_id = None
 

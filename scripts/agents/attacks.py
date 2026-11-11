@@ -263,7 +263,7 @@ def run_final_validation(
     if attack_mode and (patch_path is None or not Path(patch_path).exists()):
         raise ValueError("attack validation requires an existing implant.patch")
 
-    scripts_dir = Path(__file__).parent.absolute()
+    scripts_dir = Path(__file__).resolve().parent.parent
     results = {"stage1": None, "stage2": None, "stage3": None, "stage4": None}
 
     # Attack validation only needs stage 4. Normal validation keeps the
@@ -722,7 +722,7 @@ def run_agent(
     Returns:
         tuple: (exit_code, implant_file, log_file, container_id, agent_exec_time)
     """
-    scripts_dir = Path(__file__).parent.absolute()
+    scripts_dir = Path(__file__).resolve().parent.parent
     build_image = config.get("build_image", args.default_build_image)
     container_id = None
 
