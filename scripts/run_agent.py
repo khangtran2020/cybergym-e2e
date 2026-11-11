@@ -396,7 +396,12 @@ def run_final_validation(
             # Start fresh container and set up workspace
             container_id = start_container(build_image)
             setup_workspace(
-                container_id, data_path, script_path, mode, scripts_dir=scripts_dir
+                container_id,
+                data_path,
+                script_path,
+                mode,
+                scripts_dir=scripts_dir,
+                agent_mode="defend",
             )
 
             # Copy agent's PoC and patch
@@ -916,6 +921,7 @@ def run_agent(
             scripts_dir=scripts_dir,
             run_prepare=True,
             env=install_env,
+            agent_mode="defend",
         )
 
         # Install agent

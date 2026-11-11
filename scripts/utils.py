@@ -71,7 +71,12 @@ def copy_to_container(container_id, src_path, dst_path, file_list=None):
         for file_name in file_list:
             full_src = src_path / file_name
             if full_src.exists():
-                cmd = ["docker", "cp", str(full_src), f"{container_id}:{dst_path}/{file_name}"]
+                cmd = [
+                    "docker",
+                    "cp",
+                    str(full_src),
+                    f"{container_id}:{dst_path}/{file_name}",
+                ]
                 subprocess.run(cmd, capture_output=True, text=True)
     elif src_path.is_dir():
         # Copy entire directory
@@ -87,7 +92,9 @@ def copy_to_container(container_id, src_path, dst_path, file_list=None):
             raise Exception(f"Failed to copy {src_path}: {result.stderr}")
 
 
-def start_container(image, env_vars=None, container_name=None, workdir=None, network=None):
+def start_container(
+    image, env_vars=None, container_name=None, workdir=None, network=None
+):
     """Start a Docker container and return its ID.
 
     Args:
@@ -135,11 +142,15 @@ def switch_network(container_id, from_network, to_network):
         return
     subprocess.run(
         ["docker", "network", "disconnect", "-f", from_network, container_id],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     subprocess.run(
         ["docker", "network", "connect", to_network, container_id],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     print(f"  Switched container network: {from_network} -> {to_network}")
 
@@ -147,11 +158,22 @@ def switch_network(container_id, from_network, to_network):
 def cleanup_container(container_id):
     """Remove a container."""
     if container_id:
-        subprocess.run(["docker", "rm", "-f", container_id], check=False, capture_output=True)
+        subprocess.run(
+            ["docker", "rm", "-f", container_id], check=False, capture_output=True
+        )
 
 
-def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_poc=True, scripts_dir=None,
-                    run_prepare=False, env=None):
+def setup_workspace(
+    container_id,
+    data_path,
+    script_path,
+    mode="e2e",
+    copy_gt_poc=True,
+    scripts_dir=None,
+    run_prepare=False,
+    env=None,
+    agent_mode="defend",
+):
     """Set up workspace inside a container for agent or validation.
 
     Args:
@@ -168,6 +190,8 @@ def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_po
             --run-prepare to validate.py.
         env: Extra environment for the network-dependent steps (apt-get, uv/pip, and
             prepare.sh). Carries HTTP_PROXY/HTTPS_PROXY/NO_PROXY when firewalled.
+        agent_mode: ``defend`` leaves the vulnerable source unchanged; ``attack``
+            applies the ground-truth patch before the agent starts.
 
     Sets up:
         /src/ - source code (extracted from src.tgz) and build scripts
@@ -176,6 +200,9 @@ def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_po
         /output/ - output directory
         /scripts/ - validate.py and other utility scripts
     """
+    if agent_mode not in {"defend", "attack"}:
+        raise ValueError("agent_mode must be either 'defend' or 'attack'")
+
     # check container's image
     container_image = (
         subprocess.run(
@@ -195,9 +222,23 @@ def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_po
             verbose=False,
             check=True,
         )
-        exec_run(container_id, "rm -rf /out /work /usr/bin/arvo", workdir="/", verbose=False, check=True)
-        exec_run(container_id, "find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} +", workdir="/", verbose=False, check=True)
-        exec_run(container_id, "mkdir -p /out /work", workdir="/", verbose=False, check=True)
+        exec_run(
+            container_id,
+            "rm -rf /out /work /usr/bin/arvo",
+            workdir="/",
+            verbose=False,
+            check=True,
+        )
+        exec_run(
+            container_id,
+            "find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} +",
+            workdir="/",
+            verbose=False,
+            check=True,
+        )
+        exec_run(
+            container_id, "mkdir -p /out /work", workdir="/", verbose=False, check=True
+        )
 
     # Create directories
     exec_run(
@@ -219,8 +260,19 @@ def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_po
     )
     if not scripts_dir:
         raise ValueError("scripts_dir required for openhands")
-    copy_to_container(container_id, scripts_dir / "install_validate_deps.sh", "/install_validate_deps.sh")
-    exec_run(container_id, "bash -eux /install_validate_deps.sh", workdir="/", verbose=False, check=True, env=env)
+    copy_to_container(
+        container_id,
+        scripts_dir / "install_validate_deps.sh",
+        "/install_validate_deps.sh",
+    )
+    exec_run(
+        container_id,
+        "bash -eux /install_validate_deps.sh",
+        workdir="/",
+        verbose=False,
+        check=True,
+        env=env,
+    )
 
     # Copy validate.py if scripts_dir provided
     if scripts_dir:
@@ -230,7 +282,13 @@ def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_po
 
     # Copy and extract source
     copy_to_container(container_id, data_path / "src.tgz", "/src/src.tgz")
-    exec_run(container_id, "tar xf /src/src.tgz -C /src && rm /src/src.tgz", workdir="/", verbose=False, check=True)
+    exec_run(
+        container_id,
+        "tar xf /src/src.tgz -C /src && rm /src/src.tgz",
+        workdir="/",
+        verbose=False,
+        check=True,
+    )
 
     # Copy crash.log and poc.bin for patch-only mode (to /src for agent to see)
     if mode == "patch-only":
@@ -310,7 +368,42 @@ def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_po
                 applied = True
                 break
         if not applied:
-            raise Exception(f"Failed to apply pre_patch {pre_patch_name} with strip levels 0-3")
+            raise Exception(
+                f"Failed to apply pre_patch {pre_patch_name} with strip levels 0-3"
+            )
+
+    # Attack agents start from the ground-truth fixed source tree. Keep the
+    # patch available in the container under a stable name and apply it before
+    # prepare.sh and /src_backup are created.
+    if agent_mode == "attack":
+        ground_truth_patch = script_path / "patch.diff"
+        if not ground_truth_patch.exists():
+            raise Exception(f"ground-truth patch not found: {ground_truth_patch}")
+
+        ground_truth_patch_path = "/src/ground_truth_patch.diff"
+        copy_to_container(container_id, ground_truth_patch, ground_truth_patch_path)
+
+        applied = False
+        last_error = ""
+        for strip_level in [0, 1, 2, 3]:
+            if strip_level == 0:
+                cmd = f"cd {pre_patch_repo} && sudo git apply {ground_truth_patch_path}"
+            else:
+                cmd = (
+                    f"cd {pre_patch_repo} && "
+                    f"sudo patch -p{strip_level} < {ground_truth_patch_path}"
+                )
+            code, _, stderr = exec_run(container_id, cmd, workdir="/", verbose=False)
+            if code == 0:
+                applied = True
+                break
+            last_error = stderr
+
+        if not applied:
+            raise Exception(
+                "Failed to apply ground-truth patch with strip levels 0-3: "
+                f"{last_error[-500:]}"
+            )
 
     # Copy ground truth PoC to /data (for validation, not for agent)
     if copy_gt_poc:
@@ -334,11 +427,28 @@ def setup_workspace(container_id, data_path, script_path, mode="e2e", copy_gt_po
             env=env,
         )
         if code != 0:
-            raise Exception(f"Failed to run prepare.sh: {stdout[-1000:]}\n{stderr[-1000:]}")
-        exec_run(container_id, "cp -a /src /src_backup", workdir="/", verbose=False, check=True)
+            raise Exception(
+                f"Failed to run prepare.sh: {stdout[-1000:]}\n{stderr[-1000:]}"
+            )
+        exec_run(
+            container_id,
+            "cp -a /src /src_backup",
+            workdir="/",
+            verbose=False,
+            check=True,
+        )
 
 
-def exec_run(container_id, command, description=None, timeout=1200, env=None, workdir=None, verbose=True, check=False):
+def exec_run(
+    container_id,
+    command,
+    description=None,
+    timeout=1200,
+    env=None,
+    workdir=None,
+    verbose=True,
+    check=False,
+):
     """
     Execute command in container.
 
@@ -366,7 +476,9 @@ def exec_run(container_id, command, description=None, timeout=1200, env=None, wo
         cmd.extend([container_id, "timeout", str(timeout), "bash", "-c"] + command)
     else:
         cmd.extend([container_id, "timeout", str(timeout), "bash", "-c", command])
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 10, errors='replace')
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, timeout=timeout + 10, errors="replace"
+    )
     if check and result.returncode != 0:
         raise Exception(f"Exec failed: {result.stdout}, {result.stderr}")
     return result.returncode, result.stdout, result.stderr
