@@ -210,7 +210,18 @@ def setup_workspace(
     if agent_mode not in {"defend", "attack"}:
         raise ValueError("agent_mode must be either 'defend' or 'attack'")
 
+    log_prefix = f"[setup_workspace:{str(container_id)[:12]}]"
+
+    def setup_log(message):
+        print(f"{log_prefix} {message}", flush=True)
+
+    setup_log(
+        f"starting mode={mode}, agent_mode={agent_mode}, "
+        f"implant={'yes' if implant_patch is not None else 'no'}"
+    )
+
     # check container's image
+    setup_log("inspecting container image")
     container_image = (
         subprocess.run(
             ["docker", "inspect", "--format='{{.Config.Image}}'", container_id],
@@ -221,7 +232,9 @@ def setup_workspace(
         .stdout.strip()
         .strip("'")
     )
+    setup_log(f"container image: {container_image}")
     if "arvo" in container_image or "cybergym" in container_image:
+        setup_log("cleaning reusable image workspace")
         exec_run(
             container_id,
             "find /src -mindepth 1 -maxdepth 1 ! -name honggfuzz ! -name libfuzzer ! -name afl ! -name aflplusplus ! -name fuzztest -exec rm -rf {} +",
@@ -246,8 +259,10 @@ def setup_workspace(
         exec_run(
             container_id, "mkdir -p /out /work", workdir="/", verbose=False, check=True
         )
+        setup_log("reusable image workspace cleaned")
 
     # Create directories
+    setup_log("creating /config, /data, /output, and /scripts")
     exec_run(
         container_id,
         "mkdir -p /config /data /output /scripts",
@@ -255,8 +270,10 @@ def setup_workspace(
         verbose=False,
         check=True,
     )
+    setup_log("workspace directories ready")
 
     # Install validation dependencies (sudo for build scripts, tomli for validate.py)
+    setup_log("installing container dependencies (sudo, git)")
     exec_run(
         container_id,
         "apt-get update -qq && apt-get install -y -qq sudo git >/dev/null 2>&1",
@@ -265,6 +282,7 @@ def setup_workspace(
         check=True,
         env=env,
     )
+    setup_log("copying validation dependency installer")
     if not scripts_dir:
         raise ValueError("scripts_dir required for openhands")
     copy_to_container(
@@ -280,15 +298,21 @@ def setup_workspace(
         check=True,
         env=env,
     )
+    setup_log("validation dependencies installed")
 
     # Copy validate.py if scripts_dir provided
     if scripts_dir:
         validate_py = Path(scripts_dir) / "validate.py"
         if validate_py.exists():
+            setup_log("copying validate.py")
             copy_to_container(container_id, validate_py, "/scripts/validate.py")
+        else:
+            setup_log(f"validate.py not found at {validate_py}; skipping copy")
 
     # Copy and extract source
+    setup_log(f"copying source archive from {data_path / 'src.tgz'}")
     copy_to_container(container_id, data_path / "src.tgz", "/src/src.tgz")
+    setup_log("extracting source archive")
     exec_run(
         container_id,
         "tar xf /src/src.tgz -C /src && rm /src/src.tgz",
@@ -296,22 +320,31 @@ def setup_workspace(
         verbose=False,
         check=True,
     )
+    setup_log("source archive extracted")
 
     # Copy crash.log and poc.bin for patch-only mode (to /src for agent to see)
     if mode == "patch-only":
+        setup_log("copying patch-only crash log and PoC")
         for f in ["crash.log", "poc.bin"]:
             src_file = data_path / f
             if src_file.exists():
                 copy_to_container(container_id, src_file, f"/src/{f}")
+                setup_log(f"copied {f} to /src/{f}")
+            else:
+                setup_log(f"{f} not found at {src_file}; skipping")
         copy_gt_poc = True
 
     # Copy build scripts
+    copied_scripts = []
     for script in ["prepare.sh", "compile.sh", "run_poc.sh", "test.sh"]:
         script_file = script_path / script
         if script_file.exists():
             copy_to_container(container_id, script_file, f"/src/{script}")
+            copied_scripts.append(script)
+    setup_log(f"copied build scripts: {', '.join(copied_scripts) or 'none'}")
 
     # Copy config files (sanitize config.toml)
+    setup_log("loading and sanitizing task configuration")
     config = tomli.loads((script_path / "../project.toml").read_text())
     config.update(tomli.loads((script_path / "config.toml").read_text()))
     new_config = {
@@ -325,6 +358,10 @@ def setup_workspace(
         workdir="/",
         verbose=False,
         check=True,
+    )
+    setup_log(
+        "wrote sanitized config for repo_to_patch="
+        f"{config.get('repo_to_patch', '') or '<root>'}"
     )
 
     # Drop the target repo's git history before anything else touches the tree.
@@ -343,12 +380,14 @@ def setup_workspace(
     # and no task's build scripts read the target repo's history.
     repo_to_patch = config.get("repo_to_patch", "")
     if repo_to_patch:
+        setup_log(f"removing git history from /src/{repo_to_patch}")
         exec_run(
             container_id,
             f"rm -rf /src/{repo_to_patch}/.git",
             workdir="/",
             verbose=False,
         )
+        setup_log("target repository git history removed")
 
     # Apply pre_patches if specified in config (applied before agent starts and before validation backup)
     # pre_patches is a list of patch files to apply sequentially
@@ -358,6 +397,7 @@ def setup_workspace(
         pre_patches = [config["pre_patch"]]
     pre_patch_repo = f"/src/{repo_to_patch}" if repo_to_patch else "/src"
     for i, pre_patch_name in enumerate(pre_patches):
+        setup_log(f"applying pre-patch {i + 1}/{len(pre_patches)}: {pre_patch_name}")
         pre_patch_file = script_path / pre_patch_name
         if not pre_patch_file.exists():
             raise Exception(f"pre_patch file not found: {pre_patch_file}")
@@ -366,6 +406,7 @@ def setup_workspace(
         # Try multiple strip levels, same logic as validate.py's apply_patch
         applied = False
         for strip_level in [0, 1, 2, 3]:
+            setup_log(f"pre-patch {pre_patch_name}: trying strip level {strip_level}")
             if strip_level == 0:
                 cmd = f"cd {pre_patch_repo} && git apply {container_path}"
             else:
@@ -373,6 +414,9 @@ def setup_workspace(
             code, _, _ = exec_run(container_id, cmd, workdir="/", verbose=False)
             if code == 0:
                 applied = True
+                setup_log(
+                    f"pre-patch {pre_patch_name} applied with strip level {strip_level}"
+                )
                 break
         if not applied:
             raise Exception(
@@ -382,6 +426,7 @@ def setup_workspace(
     # Attack agents and defense validation start from the ground-truth fixed
     # source tree. Apply this before any optional implant overlay.
     if agent_mode == "attack" or implant_patch is not None:
+        setup_log("applying ground-truth patch before implant")
         ground_truth_patch = script_path / "patch.diff"
         if not ground_truth_patch.exists():
             raise Exception(f"ground-truth patch not found: {ground_truth_patch}")
@@ -403,6 +448,7 @@ def setup_workspace(
         applied = False
         last_error = ""
         for strip_level in [0, 1, 2, 3]:
+            setup_log(f"ground-truth patch: trying strip level {strip_level}")
             if strip_level == 0:
                 cmd = f"cd {pre_patch_repo} && sudo git apply {ground_truth_patch_path}"
             else:
@@ -413,6 +459,9 @@ def setup_workspace(
             code, _, stderr = exec_run(container_id, cmd, workdir="/", verbose=False)
             if code == 0:
                 applied = True
+                setup_log(
+                    f"ground-truth patch applied with strip level {strip_level}"
+                )
                 break
             last_error = stderr
 
@@ -423,6 +472,7 @@ def setup_workspace(
             )
 
         if hide_ground_truth_patch:
+            setup_log("removing temporary ground-truth patch")
             exec_run(
                 container_id,
                 f"rm -f {ground_truth_patch_path}",
@@ -434,6 +484,7 @@ def setup_workspace(
     # Apply an attacker's implant after the ground-truth patch and before
     # prepare.sh and /src_backup are created. This produces secure+implant code.
     if implant_patch is not None:
+        setup_log(f"applying implant patch from {implant_patch}")
         implant_patch = Path(implant_patch)
         if not implant_patch.exists():
             raise Exception(f"implant patch not found: {implant_patch}")
@@ -443,6 +494,7 @@ def setup_workspace(
         applied = False
         last_error = ""
         for strip_level in [0, 1, 2, 3]:
+            setup_log(f"implant patch: trying strip level {strip_level}")
             if strip_level == 0:
                 cmd = f"cd {pre_patch_repo} && git apply {implant_container_path}"
             else:
@@ -455,6 +507,7 @@ def setup_workspace(
             )
             if code == 0:
                 applied = True
+                setup_log(f"implant patch applied with strip level {strip_level}")
                 break
             last_error = stderr
 
@@ -467,6 +520,7 @@ def setup_workspace(
         # The defender needs the implanted source, not the attacker's patch
         # artifact.  Remove the temporary copy so it cannot simply inspect the
         # implant instead of finding the vulnerability independently.
+        setup_log("removing temporary implant patch")
         exec_run(
             container_id,
             f"rm -f {implant_container_path}",
@@ -479,7 +533,10 @@ def setup_workspace(
     if copy_gt_poc:
         gt_poc = data_path / "poc.bin"
         if gt_poc.exists():
+            setup_log("copying ground-truth PoC to /data/poc.bin")
             copy_to_container(container_id, gt_poc, "/data/poc.bin")
+        else:
+            setup_log(f"ground-truth PoC not found at {gt_poc}; skipping")
 
     # Run prepare.sh here (after pre_patches) rather than inside validate.py.
     # prepare.sh is the last network-dependent step: ~30% of tasks apt-get/pip/git
@@ -488,6 +545,7 @@ def setup_workspace(
     # Side effects persist: packages land outside /src, and /src_backup is taken
     # after prepare, so validate.py's restore_src() keeps the prepared tree.
     if run_prepare:
+        setup_log("running prepare.sh")
         code, stdout, stderr = exec_run(
             container_id,
             "bash -eux /src/prepare.sh",
@@ -500,6 +558,8 @@ def setup_workspace(
             raise Exception(
                 f"Failed to run prepare.sh: {stdout[-1000:]}\n{stderr[-1000:]}"
             )
+        setup_log("prepare.sh completed")
+        setup_log("creating /src_backup snapshot")
         exec_run(
             container_id,
             "cp -a /src /src_backup",
@@ -507,6 +567,9 @@ def setup_workspace(
             verbose=False,
             check=True,
         )
+        setup_log("/src_backup snapshot created")
+
+    setup_log("workspace setup complete")
 
 
 def exec_run(
