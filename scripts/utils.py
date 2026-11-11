@@ -173,6 +173,7 @@ def setup_workspace(
     run_prepare=False,
     env=None,
     agent_mode="defend",
+    implant_patch=None,
 ):
     """Set up workspace inside a container for agent or validation.
 
@@ -190,8 +191,14 @@ def setup_workspace(
             --run-prepare to validate.py.
         env: Extra environment for the network-dependent steps (apt-get, uv/pip, and
             prepare.sh). Carries HTTP_PROXY/HTTPS_PROXY/NO_PROXY when firewalled.
-        agent_mode: ``defend`` leaves the vulnerable source unchanged; ``attack``
-            applies the ground-truth patch before the agent starts.
+        agent_mode: ``defend`` is the normal defender setup; ``attack`` applies
+            the ground-truth patch and leaves its reference diff in /src for the
+            attack agent. If ``implant_patch`` is supplied, the ground-truth
+            patch is applied first even in defend mode, but its reference diff
+            is kept temporary and removed before the agent starts.
+        implant_patch: Optional local patch to apply to the vulnerable source
+            before preparation. Used to give the defense agent the attacker's
+            modified source tree.
 
     Sets up:
         /src/ - source code (extracted from src.tgz) and build scripts
@@ -372,15 +379,25 @@ def setup_workspace(
                 f"Failed to apply pre_patch {pre_patch_name} with strip levels 0-3"
             )
 
-    # Attack agents start from the ground-truth fixed source tree. Keep the
-    # patch available in the container under a stable name and apply it before
-    # prepare.sh and /src_backup are created.
-    if agent_mode == "attack":
+    # Attack agents and defense validation start from the ground-truth fixed
+    # source tree. Apply this before any optional implant overlay.
+    if agent_mode == "attack" or implant_patch is not None:
         ground_truth_patch = script_path / "patch.diff"
         if not ground_truth_patch.exists():
             raise Exception(f"ground-truth patch not found: {ground_truth_patch}")
 
-        ground_truth_patch_path = "/src/ground_truth_patch.diff"
+        # The attack agent needs the reference patch in /src so it can reason
+        # about the secure implementation.  A defense workspace, however,
+        # should only contain the resulting source tree; leaving the patch in
+        # /src would leak the reference fix to the defender.  Use a temporary
+        # path while constructing secure+implant workspaces and remove it
+        # immediately after applying it.
+        hide_ground_truth_patch = agent_mode != "attack" or implant_patch is not None
+        ground_truth_patch_path = (
+            "/tmp/ground_truth_patch.diff"
+            if hide_ground_truth_patch
+            else "/src/ground_truth_patch.diff"
+        )
         copy_to_container(container_id, ground_truth_patch, ground_truth_patch_path)
 
         applied = False
@@ -404,6 +421,59 @@ def setup_workspace(
                 "Failed to apply ground-truth patch with strip levels 0-3: "
                 f"{last_error[-500:]}"
             )
+
+        if hide_ground_truth_patch:
+            exec_run(
+                container_id,
+                f"rm -f {ground_truth_patch_path}",
+                workdir="/",
+                verbose=False,
+                check=True,
+            )
+
+    # Apply an attacker's implant after the ground-truth patch and before
+    # prepare.sh and /src_backup are created. This produces secure+implant code.
+    if implant_patch is not None:
+        implant_patch = Path(implant_patch)
+        if not implant_patch.exists():
+            raise Exception(f"implant patch not found: {implant_patch}")
+
+        implant_container_path = "/config/implant.patch"
+        copy_to_container(container_id, implant_patch, implant_container_path)
+        applied = False
+        last_error = ""
+        for strip_level in [0, 1, 2, 3]:
+            if strip_level == 0:
+                cmd = f"cd {pre_patch_repo} && git apply {implant_container_path}"
+            else:
+                cmd = (
+                    f"cd {pre_patch_repo} && "
+                    f"patch -p{strip_level} < {implant_container_path}"
+                )
+            code, _, stderr = exec_run(
+                container_id, cmd, workdir="/", verbose=False
+            )
+            if code == 0:
+                applied = True
+                break
+            last_error = stderr
+
+        if not applied:
+            raise Exception(
+                "Failed to apply implant patch with strip levels 0-3: "
+                f"{last_error[-500:]}"
+            )
+
+        # The defender needs the implanted source, not the attacker's patch
+        # artifact.  Remove the temporary copy so it cannot simply inspect the
+        # implant instead of finding the vulnerability independently.
+        exec_run(
+            container_id,
+            f"rm -f {implant_container_path}",
+            workdir="/",
+            verbose=False,
+            check=True,
+        )
 
     # Copy ground truth PoC to /data (for validation, not for agent)
     if copy_gt_poc:

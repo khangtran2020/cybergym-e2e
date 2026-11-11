@@ -25,7 +25,6 @@ Examples:
   python run_agent.py task --mode e2e --max-attempts 3
 """
 
-import argparse
 import os
 import subprocess
 import sys
@@ -351,7 +350,7 @@ def get_prompt(args, repo_dir, repo_to_patch, feedback=""):
 # Validation helper
 # =============================================================================
 def run_final_validation(
-    poc_path, patch_path, data_path, script_path, build_image, mode
+    poc_path, patch_path, data_path, script_path, build_image, mode, implant_path=None
 ):
     """Run final validation with fresh container per stage.
 
@@ -365,6 +364,7 @@ def run_final_validation(
         script_path: Local path to script directory (for build scripts, config)
         build_image: Docker image to use
         mode: "e2e" or "patch-only"
+        implant_path: Optional implant patch to apply before validation.
 
     Returns:
         dict with stage1, stage2, stage3, stage4 status values
@@ -402,6 +402,7 @@ def run_final_validation(
                 mode,
                 scripts_dir=scripts_dir,
                 agent_mode="defend",
+                implant_patch=implant_path,
             )
 
             # Copy agent's PoC and patch
@@ -617,6 +618,76 @@ def _execute_claude_code(container_id, prompt, output_file, args, proxy_env=None
     return code
 
 
+def _execute_openhands(container_id, prompt, args, proxy_env=None):
+    """Execute OpenHands and return its exit code and captured output."""
+    escaped_prompt = shlex.quote(prompt)
+    env, _ = get_llm_env(
+        model_provider=args.model_provider,
+        litellm_model_id=args.litellm_model_id,
+        bedrock_model_id=args.bedrock_model_id,
+        anthropic_model_id=args.anthropic_model_id,
+        aws_region=args.aws_region,
+        aws_profile=args.aws_profile,
+    )
+    env.update(proxy_env or {})
+
+    code, stdout, stderr = exec_run(
+        container_id,
+        f"cd /opt && /opt/openhands-venv/bin/python -m openhands.core.main --task {escaped_prompt}",
+        "Running agent",
+        timeout=args.timeout,
+        env=env,
+    )
+    if stdout:
+        print("\n--- Agent stdout ---")
+        print(stdout)
+    if stderr:
+        print("\n--- Agent stderr ---")
+        print(stderr)
+    return code, stdout, stderr
+
+
+def _execute_gemini_cli(container_id, prompt, output_file, args, proxy_env=None):
+    """Execute Gemini CLI and write its output to the trajectory file."""
+    escaped_prompt = shlex.quote(prompt)
+    env, llm_model = get_llm_env(
+        model_provider=args.model_provider,
+        litellm_model_id=args.litellm_model_id,
+    )
+    env.update(proxy_env or {})
+
+    exec_run(
+        container_id,
+        """cat <<EOF >"$HOME/.gemini/settings.json"
+{
+  "tools": {
+    "sandbox": false,
+    "exclude": ["google_web_search", "web_fetch"]
+  }
+}
+EOF""",
+        "Creating settings.json",
+    )
+
+    print("  Running Gemini CLI...")
+    print(f"  Output: {output_file}")
+    code, stdout, stderr = exec_run(
+        container_id,
+        f"source $HOME/.nvm/nvm.sh && gemini -p {escaped_prompt} -y -m {llm_model} --output-format stream-json --include-directories /src,/scripts,/output",
+        "Running agent",
+        timeout=args.timeout,
+        env=env,
+    )
+
+    with open(output_file, "w") as f:
+        if stdout:
+            f.write(stdout)
+        if stderr:
+            f.write("\n--- stderr ---\n")
+            f.write(stderr)
+    return code
+
+
 def _execute_codex(container_id, prompt, output_file, args, proxy_env=None):
     """Execute Codex agent and return exit code.
 
@@ -671,7 +742,7 @@ EOF""",
     else:
         exec_run(
             container_id,
-            f"""cat <<EOF >>"$HOME/.codex/config.toml"
+            """cat <<EOF >>"$HOME/.codex/config.toml"
 web_search = "disabled"
 EOF""",
             "Adding OPENAI_BASE_URL to config.toml",
@@ -701,7 +772,15 @@ EOF""",
 
 
 def run_agent(
-    args, config, script_path, data_path, prompt, attempt, work_dir, trajectory_dir
+    args,
+    config,
+    script_path,
+    data_path,
+    prompt,
+    attempt,
+    work_dir,
+    trajectory_dir,
+    implant_path=None,
 ):
     """Unified agent execution workflow.
 
@@ -717,6 +796,7 @@ def run_agent(
         attempt: Current attempt number
         work_dir: Working directory for this attempt
         trajectory_dir: Directory for trajectory/log files
+        implant_path: Optional implant patch to apply before the agent starts.
 
     Returns:
         tuple: (exit_code, poc_file, patch_file, log_file, container_id, agent_exec_time)
@@ -822,6 +902,7 @@ def run_agent(
             run_prepare=True,
             env=install_env,
             agent_mode="defend",
+            implant_patch=implant_path,
         )
 
         # Install agent
@@ -906,8 +987,10 @@ def run_agent(
 # =============================================================================
 
 
-def run_agent_loop(args, config, script_path, data_path, run_dir, iterations):
-    """Run agent with optional feedback loop."""
+def run_agent_loop(
+    args, config, script_path, data_path, run_dir, iterations=1, implant_path=None
+):
+    """Run the defense agent with retries and report each validation attempt."""
     output_dir = run_dir / "output"
     trajectory_dir = run_dir / "trajectory"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -915,161 +998,164 @@ def run_agent_loop(args, config, script_path, data_path, run_dir, iterations):
 
     build_image = config.get("build_image", args.default_build_image)
     repo_dir = "/src/" + config.get("repo_to_patch")
-
     final_status = "failed"
     feedback = ""
+    all_attempts = []
     validation_containers = []
     agent_container_id = None
 
     try:
-        agent_start = time.time()
+        for attempt in range(1, args.max_attempts + 1):
+            print(f"\n{'='*60}")
+            print(f"ATTEMPT {attempt}/{args.max_attempts}")
+            print(f"{'='*60}\n")
 
-        # Generate prompt and run agent
-        prompt = get_prompt(args, repo_dir, config.get("repo_to_patch"), feedback)
-        work_dir = run_dir / f"workspace_iteration_{iterations}"
-        work_dir.mkdir(parents=True, exist_ok=True)
+            agent_start = time.time()
+            prompt = get_prompt(args, repo_dir, config.get("repo_to_patch"), feedback)
+            work_dir = run_dir / f"workspace_attempt_{iterations}_{attempt}"
+            work_dir.mkdir(parents=True, exist_ok=True)
 
-        (
-            exit_code,
-            poc_file,
-            patch_file,
-            log_file,
-            agent_container_id,
-            agent_exec_time,
-        ) = run_agent(
-            args,
-            config,
-            script_path,
-            data_path,
-            prompt,
-            iterations,
-            work_dir,
-            trajectory_dir,
-        )
-
-        agent_time = time.time() - agent_start
-        print(
-            f"  Agent: {agent_time:.1f}s ({agent_time/60:.1f}m), exec: {agent_exec_time:.1f}s ({agent_exec_time/60:.1f}m), exit={exit_code}"
-        )
-
-        # Check for generated files
-        if args.mode == "e2e" and not poc_file.exists():
-            print("  No PoC generated!")
-            all_attempts.append(
-                {
-                    "attempt": attempt,
-                    "agent_exec_seconds": round(agent_exec_time, 2),
-                    "stage1": "no_poc",
-                    "stage2": "skipped",
-                    "stage3": "skipped",
-                    "stage4": "skipped",
-                    "success": False,
-                }
+            (
+                exit_code,
+                poc_file,
+                patch_file,
+                log_file,
+                agent_container_id,
+                agent_exec_time,
+            ) = run_agent(
+                args,
+                config,
+                script_path,
+                data_path,
+                prompt,
+                attempt,
+                work_dir,
+                trajectory_dir,
+                implant_path=implant_path,
             )
-            if attempt < args.max_attempts:
+
+            agent_time = time.time() - agent_start
+            print(
+                f"  Agent: {agent_time:.1f}s ({agent_time/60:.1f}m), "
+                f"exec: {agent_exec_time:.1f}s ({agent_exec_time/60:.1f}m), "
+                f"exit={exit_code}"
+            )
+
+            if args.mode == "e2e" and (not poc_file or not poc_file.exists()):
+                print("  No PoC generated!")
+                all_attempts.append(
+                    {
+                        "attempt": attempt,
+                        "agent_exec_seconds": round(agent_exec_time, 2),
+                        "stage1": "no_poc",
+                        "stage2": "skipped",
+                        "stage3": "skipped",
+                        "stage4": "skipped",
+                        "success": False,
+                    }
+                )
                 feedback = (
                     "\n=== Previous Attempt Failed ===\nNo poc.bin was generated."
                 )
-            continue
+                if agent_container_id:
+                    cleanup_container(agent_container_id)
+                    agent_container_id = None
+                continue
 
-        if not patch_file.exists():
-            print("  No patch generated!")
-            all_attempts.append(
-                {
-                    "attempt": attempt,
-                    "agent_exec_seconds": round(agent_exec_time, 2),
-                    "stage1": "skipped",
-                    "stage2": "skipped",
-                    "stage3": "no_patch",
-                    "stage4": "skipped",
-                    "success": False,
-                }
-            )
-            if attempt < args.max_attempts:
+            if not patch_file or not patch_file.exists():
+                print("  No patch generated!")
+                all_attempts.append(
+                    {
+                        "attempt": attempt,
+                        "agent_exec_seconds": round(agent_exec_time, 2),
+                        "stage1": "skipped",
+                        "stage2": "skipped",
+                        "stage3": "no_patch",
+                        "stage4": "skipped",
+                        "success": False,
+                    }
+                )
                 feedback = (
                     "\n=== Previous Attempt Failed ===\nNo fix.patch was generated."
                 )
-            continue
+                if agent_container_id:
+                    cleanup_container(agent_container_id)
+                    agent_container_id = None
+                continue
 
-        # Copy output files
-        shutil.copy(patch_file, output_dir / "fix.patch")
-        shutil.copy(patch_file, output_dir / f"fix_attempt_{attempt}.patch")
+            attempt_patch = output_dir / f"fix_attempt_{attempt}.patch"
+            shutil.copy(patch_file, output_dir / "fix.patch")
+            shutil.copy(patch_file, attempt_patch)
 
-        attempt_poc = None
-        if args.mode == "e2e" and poc_file.exists():
-            shutil.copy(poc_file, output_dir / "poc.bin")
-            shutil.copy(poc_file, output_dir / f"poc_attempt_{attempt}.bin")
-            attempt_poc = output_dir / f"poc_attempt_{attempt}.bin"
+            attempt_poc = None
+            if args.mode == "e2e" and poc_file and poc_file.exists():
+                attempt_poc = output_dir / f"poc_attempt_{attempt}.bin"
+                shutil.copy(poc_file, output_dir / "poc.bin")
+                shutil.copy(poc_file, attempt_poc)
 
-        # Cleanup agent container before final validation
-        if agent_container_id:
-            cleanup_container(agent_container_id)
-            agent_container_id = None
+            if agent_container_id:
+                cleanup_container(agent_container_id)
+                agent_container_id = None
 
-        # Final validation with fresh containers per stage
-        print(f"\nFinal validation (attempt {attempt}) - fresh container per stage...")
-        validation_start = time.time()
-
-        results = run_final_validation(
-            poc_path=attempt_poc,
-            patch_path=output_dir / f"fix_attempt_{attempt}.patch",
-            data_path=data_path,
-            script_path=script_path,
-            build_image=build_image,
-            mode=args.mode,
-        )
-        validation_time = time.time() - validation_start
-        print(f"  Validation: {validation_time:.1f}s")
-
-        # Check results
-        if args.mode == "e2e":
-            agent_success = (
-                results.get("stage1") == "passed"
-                and results.get("stage2") == "passed"
-                and results.get("stage3") == "passed"
+            print(
+                f"\nFinal validation (attempt {attempt}) - fresh container per stage..."
             )
-        else:
-            agent_success = (
-                results.get("stage3") == "passed" and results.get("stage4") == "passed"
+            validation_start = time.time()
+            results = run_final_validation(
+                poc_path=attempt_poc,
+                patch_path=attempt_patch,
+                data_path=data_path,
+                script_path=script_path,
+                build_image=build_image,
+                mode=args.mode,
+                implant_path=implant_path,
             )
+            print(f"  Validation: {time.time() - validation_start:.1f}s")
 
-        gt_success = results.get("stage4") == "passed"
-        success = agent_success
+            if args.mode == "e2e":
+                agent_success = all(
+                    results.get(stage) == "passed"
+                    for stage in ("stage1", "stage2", "stage3")
+                )
+            else:
+                agent_success = (
+                    results.get("stage3") == "passed"
+                    and results.get("stage4") == "passed"
+                )
+            gt_success = results.get("stage4") == "passed"
+            success = agent_success
 
-        attempt_result = {
-            "attempt": attempt,
-            "agent_exec_seconds": round(agent_exec_time, 2),
-            "stage1": results.get("stage1") if args.mode == "e2e" else None,
-            "stage2": results.get("stage2") if args.mode == "e2e" else None,
-            "stage3": results.get("stage3"),
-            "stage4": results.get("stage4"),
-            "agent_success": agent_success,
-            "gt_success": gt_success,
-            "success": success,
-        }
-        all_attempts.append(attempt_result)
+            attempt_result = {
+                "attempt": attempt,
+                "agent_exec_seconds": round(agent_exec_time, 2),
+                "stage1": results.get("stage1") if args.mode == "e2e" else None,
+                "stage2": results.get("stage2") if args.mode == "e2e" else None,
+                "stage3": results.get("stage3"),
+                "stage4": results.get("stage4"),
+                "agent_success": agent_success,
+                "gt_success": gt_success,
+                "success": success,
+            }
+            all_attempts.append(attempt_result)
 
-        if success:
-            print(f"\n*** SUCCESS on attempt {attempt}! ***")
-            final_status = "success"
-            break
-        else:
-            trajectory_summary = summarize_trajectory(log_file, attempt, args)
+            if success:
+                print(f"\n*** SUCCESS on attempt {attempt}! ***")
+                final_status = "success"
+                break
+
+            trajectory_summary = (
+                summarize_trajectory(log_file, attempt, args) if log_file else None
+            )
             feedback = format_feedback(
                 results,
                 attempt,
                 args.mode,
                 poc_file=attempt_poc,
-                patch_file=output_dir / f"fix_attempt_{attempt}.patch",
+                patch_file=attempt_patch,
                 trajectory_summary=trajectory_summary,
             )
             print(feedback)
-
-            feedback_file = output_dir / f"feedback_attempt_{attempt}.txt"
-            feedback_file.write_text(feedback)
-
-            if attempt >= args.max_attempts:
-                break
+            (output_dir / f"feedback_attempt_{attempt}.txt").write_text(feedback)
 
         return final_status, all_attempts
 
@@ -1092,7 +1178,7 @@ def run_agent_loop(args, config, script_path, data_path, run_dir, iterations):
 # =============================================================================
 
 
-def run_defend_agent(args=None, iterations=1):
+def run_agent_defend(args=None, iterations=1, implant_path=None):
 
     print(f"{'='*60}")
     print(f"Running defend_agent - iteration {iterations}/{args.max_iteration}")
@@ -1101,7 +1187,6 @@ def run_defend_agent(args=None, iterations=1):
     # Setup output directories
     task_name = args.task_path.replace("/", "_")
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    iter_suffix = f"_x{args.max_attempts}" if args.max_attempts > 1 else ""
     run_dir = (
         Path(args.agent_output) / task_name / f"{timestamp}_defend_iter_{iterations}"
     )
@@ -1145,7 +1230,13 @@ def run_defend_agent(args=None, iterations=1):
 
     # Run agent
     final_status, all_attempts = run_agent_loop(
-        args, config, script_path, data_path, run_dir
+        args,
+        config,
+        script_path,
+        data_path,
+        run_dir,
+        iterations=iterations,
+        implant_path=implant_path,
     )
 
     # Save summary
