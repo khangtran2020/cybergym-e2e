@@ -15,7 +15,6 @@ import tomli
 from agents import attacks, defense
 from utils import litellm_delete_api_key, litellm_generate_api_key
 
-
 DEFAULT_TIMEOUT = 5400
 DEFAULT_BUILD_IMAGE = (
     "gcr.io/oss-fuzz-base/base-builder@sha256:"
@@ -38,7 +37,9 @@ def build_parser():
         choices=["claude-code", "openhands", "codex", "gemini-cli"],
         default="claude-code",
     )
-    parser.add_argument("--prompt-style", choices=["iterative", "no-test"], default="iterative")
+    parser.add_argument(
+        "--prompt-style", choices=["iterative", "no-test"], default="iterative"
+    )
     parser.add_argument(
         "--mode",
         choices=["patch-only", "e2e"],
@@ -57,7 +58,8 @@ def build_parser():
         choices=["litellm", "bedrock", "anthropic"],
         default="anthropic",
     )
-    parser.add_argument("--litellm-model-id", default="openai/gpt-5.2-codex")
+    parser.add_argument("--attack-litellm-model-id", default="openai/gpt-5.2-codex")
+    parser.add_argument("--defense-litellm-model-id", default="openai/gpt-5.2-codex")
     parser.add_argument(
         "--bedrock-model-id",
         default="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -94,6 +96,8 @@ def run_game(args):
     attack_args.agent = args.attack_agent
     defense_args = copy.copy(args)
     defense_args.agent = args.defense_agent
+    attack_args.litellm_model_id = args.attack_litellm_model_id
+    defense_args.litellm_model_id = args.defense_litellm_model_id
     feedback = ""
     rounds = []
     winner = None
@@ -117,7 +121,9 @@ def run_game(args):
             attack_dir.mkdir(parents=True, exist_ok=True)
             defense_dir.mkdir(parents=True, exist_ok=True)
 
-            print(f"\n{'=' * 72}\nITERATION {iteration}/{args.max_iteration}: ATTACKER\n{'=' * 72}")
+            print(
+                f"\n{'=' * 72}\nITERATION {iteration}/{args.max_iteration}: ATTACKER\n{'=' * 72}"
+            )
             attack_status, attack_attempts = attacks.run_agent_loop(
                 attack_args,
                 config,
@@ -170,7 +176,9 @@ def run_game(args):
                 )
                 break
 
-            print(f"\n{'=' * 72}\nITERATION {iteration}/{args.max_iteration}: DEFENDER\n{'=' * 72}")
+            print(
+                f"\n{'=' * 72}\nITERATION {iteration}/{args.max_iteration}: DEFENDER\n{'=' * 72}"
+            )
             defense_status, defense_attempts = defense.run_agent_loop(
                 defense_args,
                 config,
@@ -222,7 +230,9 @@ def run_game(args):
             "output_dir": str(run_dir.absolute()),
         }
         (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
-        print(f"\nGAME OVER: {winner.upper()} WINS\nReason: {reason}\nSummary: {run_dir / 'summary.json'}")
+        print(
+            f"\nGAME OVER: {winner.upper()} WINS\nReason: {reason}\nSummary: {run_dir / 'summary.json'}"
+        )
         return summary
     finally:
         if generated_api_key:
