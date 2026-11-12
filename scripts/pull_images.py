@@ -84,7 +84,7 @@ def collect_images(projects_dir, threshold: int = 1, debug: bool = False) -> set
             )
 
         if debug:
-            if len(images) > 10:
+            if len(images) > 50:
                 break  # Limit to 10 images for debugging
     print(images)
     return images, project_dict
