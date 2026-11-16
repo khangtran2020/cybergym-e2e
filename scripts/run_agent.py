@@ -59,6 +59,9 @@ from utils import (
 # Default timeout in seconds (90 minutes)
 DEFAULT_TIMEOUT = 5400
 
+# Set this to the model's actual context window size, in tokens.
+CODEX_MODEL_CONTEXT_WINDOW = 128000
+
 
 # =============================================================================
 # Feedback formatting
@@ -700,6 +703,7 @@ EOF""",
 openai_base_url = "{openai_base_url}"
 web_search = "disabled"
 model_provider = "openai_http"
+model_context_window = {CODEX_MODEL_CONTEXT_WINDOW}
 
 [model_providers.openai_http]
 name = "OpenAI HTTP"
@@ -713,6 +717,7 @@ EOF""",
             container_id,
             f"""cat <<EOF >>"$HOME/.codex/config.toml"
 web_search = "disabled"
+model_context_window = {CODEX_MODEL_CONTEXT_WINDOW}
 EOF""",
             "Adding OPENAI_BASE_URL to config.toml",
         )
